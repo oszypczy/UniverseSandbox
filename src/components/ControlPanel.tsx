@@ -1,5 +1,6 @@
 import React from 'react';
-import type { InteractionMode } from '../types';
+import type { InteractionMode, Preset } from '../types';
+import { PRESETS } from '../utils/presets';
 import './ControlPanel.css';
 
 interface ControlPanelProps {
@@ -13,6 +14,7 @@ interface ControlPanelProps {
   onTogglePause: () => void;
   onReset: () => void;
   onClearAll: () => void;
+  onLoadPreset: (preset: Preset) => void;
   bodyCount?: number;
   interactionMode: InteractionMode;
   onInteractionModeChange: (mode: InteractionMode) => void;
@@ -29,6 +31,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   onTogglePause,
   onReset,
   onClearAll,
+  onLoadPreset,
   bodyCount = 0,
   interactionMode,
   onInteractionModeChange,
@@ -54,7 +57,23 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           </button>
         </div>
       </div>
-      
+
+      <div className="control-section preset-section">
+        <label>Predefiniowane scenariusze:</label>
+        <div className="preset-buttons">
+          {Object.entries(PRESETS).map(([key, preset]) => (
+            <button
+              key={key}
+              onClick={() => onLoadPreset(preset)}
+              className="preset-btn"
+              title={preset.description}
+            >
+              {preset.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="control-section">
         <label>
           Masa obiektu: <strong>{mass}</strong>

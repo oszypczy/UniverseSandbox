@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Scene3D } from './components/Scene3D';
 import type { Scene3DHandle } from './components/Scene3D';
-import type { InteractionMode } from './types';
+import type { InteractionMode, Preset } from './types';
 import { ControlPanel } from './components/ControlPanel';
 import { UI_CONSTANTS } from './utils/constants';
 import './App.css';
@@ -34,6 +34,11 @@ function App() {
     setBodyCount(0);
   };
 
+  const handleLoadPreset = (preset: Preset) => {
+    scene3DRef.current?.loadPreset(preset);
+    setIsPaused(false);
+  };
+
   return (
     <div className="app">
       <Scene3D
@@ -56,6 +61,7 @@ function App() {
         onTogglePause={handleTogglePause}
         onReset={handleReset}
         onClearAll={handleClearAll}
+        onLoadPreset={handleLoadPreset}
         bodyCount={bodyCount}
         interactionMode={interactionMode}
         onInteractionModeChange={setInteractionMode}

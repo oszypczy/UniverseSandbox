@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { useThreeScene } from '../hooks/useThreeScene';
 import { useSimulation } from '../hooks/useSimulation';
 import { useMouseInteraction } from '../hooks/useMouseInteraction';
-import type { SimulationConfig, InteractionMode } from '../types';
+import type { SimulationConfig, InteractionMode, Preset } from '../types';
 
 interface Scene3DProps {
   mass: number;
@@ -17,6 +17,7 @@ interface Scene3DProps {
 export interface Scene3DHandle {
   removeAllBodies: () => void;
   reset: () => void;
+  loadPreset: (preset: Preset) => void;
 }
 
 export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(({
@@ -91,7 +92,28 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(({
         onBodyCountChange(0);
       }
     },
-  }), [removeAllBodies, reset, onBodyCountChange]);
+    loadPreset: (preset: Preset) => {
+      // Clear existing bodies
+      removeAllBodies();
+
+      // Add all bodies from preset
+      preset.bodies.forEach(bodyParams => {
+        addBody({
+          position: new THREE.Vector3(bodyParams.position.x, bodyParams.position.y, bodyParams.position.z),
+          velocity: new THREE.Vector3(bodyParams.velocity.x, bodyParams.velocity.y, bodyParams.velocity.z),
+          mass: bodyParams.mass,
+          color: bodyParams.color,
+        });
+      });
+
+      // Update body count
+      if (onBodyCountChange) {
+        setTimeout(() => {
+          onBodyCountChange(getBodyCount());
+        }, 0);
+      }
+    },
+  }), [removeAllBodies, reset, addBody, getBodyCount, onBodyCountChange]);
 
   return (
     <canvas

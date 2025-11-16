@@ -77,37 +77,40 @@ export function useSimulation({
 
   // Główna pętla animacji
   const animate = useCallback((time: number) => {
-    if (!engineRef.current || !scene || !renderer || !camera || isPaused) {
+    if (!engineRef.current || !scene || !renderer || !camera) {
       animationFrameRef.current = requestAnimationFrame(animate);
       return;
     }
 
-    // Oblicz deltaTime
-    const deltaTime = lastTimeRef.current === 0 
-      ? 0.016 
-      : Math.min((time - lastTimeRef.current) / 1000, 0.1); // Cap at 100ms
-    lastTimeRef.current = time;
+    // Tylko aktualizuj fizykę gdy nie jest wstrzymane
+    if (!isPaused) {
+      // Oblicz deltaTime
+      const deltaTime = lastTimeRef.current === 0
+        ? 0.016
+        : Math.min((time - lastTimeRef.current) / 1000, 0.1); // Cap at 100ms
+      lastTimeRef.current = time;
 
-    // Aktualizuj fizykę
-    engineRef.current.update(deltaTime);
+      // Aktualizuj fizykę
+      engineRef.current.update(deltaTime);
 
-    // Aktualizuj trajektorie
-    if (showTrails) {
-      updateTrails(engineRef.current.getBodies());
-    } else {
-      // Usuń trajektorie jeśli są wyłączone
-      engineRef.current.getBodies().forEach(body => {
-        if (body.trail) {
-          scene.remove(body.trail);
-          body.trail.geometry.dispose();
-          (body.trail.material as THREE.Material).dispose();
-          body.trail = undefined;
-        }
-        body.trailPoints = [];
-      });
+      // Aktualizuj trajektorie
+      if (showTrails) {
+        updateTrails(engineRef.current.getBodies());
+      } else {
+        // Usuń trajektorie jeśli są wyłączone
+        engineRef.current.getBodies().forEach(body => {
+          if (body.trail) {
+            scene.remove(body.trail);
+            body.trail.geometry.dispose();
+            (body.trail.material as THREE.Material).dispose();
+            body.trail = undefined;
+          }
+          body.trailPoints = [];
+        });
+      }
     }
 
-    // Renderuj scenę
+    // Renderuj scenę ZAWSZE (nawet gdy wstrzymane) aby camera controls działały
     renderer.render(scene, camera);
 
     animationFrameRef.current = requestAnimationFrame(animate);

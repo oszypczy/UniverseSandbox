@@ -72,7 +72,7 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(({
     canvasRef,
     camera,
     scene,
-    enabled: !isPaused && interactionMode === 'edit',
+    enabled: interactionMode === 'edit',
     onBodyCreate: handleBodyCreate,
     mass,
   });
@@ -100,11 +100,7 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(({
         display: 'block',
         width: '100vw',
         height: '100vh',
-        cursor: isPaused
-          ? 'default'
-          : interactionMode === 'edit'
-            ? 'crosshair'
-            : 'grab',
+        cursor: interactionMode === 'edit' ? 'crosshair' : 'grab',
       }}
     />
   );

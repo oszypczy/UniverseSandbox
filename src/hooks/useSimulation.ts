@@ -11,7 +11,6 @@ interface UseSimulationProps {
   config: Partial<SimulationConfig>;
   isPaused: boolean;
   showTrails: boolean;
-  onBodyCountChange?: (count: number) => void;
 }
 
 export function useSimulation({
@@ -21,7 +20,6 @@ export function useSimulation({
   config,
   isPaused,
   showTrails,
-  onBodyCountChange,
 }: UseSimulationProps) {
   const engineRef = useRef<PhysicsEngine | null>(null);
   const animationFrameRef = useRef<number>(0);
@@ -364,13 +362,6 @@ export function useSimulation({
     return engineRef.current?.calculateTotalEnergy() || 0;
   }, []);
 
-  // Notify body count changes via callback
-  const notifyBodyCountChange = useCallback(() => {
-    if (onBodyCountChange && engineRef.current) {
-      onBodyCountChange(engineRef.current.getBodyCount());
-    }
-  }, [onBodyCountChange]);
-
   return {
     addBody,
     removeAllBodies,
@@ -378,6 +369,5 @@ export function useSimulation({
     getBodies,
     getBodyCount,
     getTotalEnergy,
-    notifyBodyCountChange,
   };
 }

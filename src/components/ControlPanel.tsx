@@ -1,6 +1,5 @@
 import React from 'react';
-import type { InteractionMode, Preset } from '../types';
-import { PRESETS } from '../utils/presets';
+import type { InteractionMode } from '../types';
 import './ControlPanel.css';
 
 interface ControlPanelProps {
@@ -14,8 +13,6 @@ interface ControlPanelProps {
   onTogglePause: () => void;
   onReset: () => void;
   onClearAll: () => void;
-  onLoadPreset: (preset: Preset) => void;
-  bodyCount?: number;
   interactionMode: InteractionMode;
   onInteractionModeChange: (mode: InteractionMode) => void;
 }
@@ -31,15 +28,13 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   onTogglePause,
   onReset,
   onClearAll,
-  onLoadPreset,
-  bodyCount = 0,
   interactionMode,
   onInteractionModeChange,
 }) => {
   return (
     <div className="control-panel">
       <h2>🎮 Kontrola Symulacji</h2>
-      
+
       <div className="control-section mode-section">
         <label>Tryb interakcji:</label>
         <div className="mode-buttons">
@@ -55,22 +50,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           >
             📷 Kamera
           </button>
-        </div>
-      </div>
-
-      <div className="control-section preset-section">
-        <label>Predefiniowane scenariusze:</label>
-        <div className="preset-buttons">
-          {Object.entries(PRESETS).map(([key, preset]) => (
-            <button
-              key={key}
-              onClick={() => onLoadPreset(preset)}
-              className="preset-btn"
-              title={preset.description}
-            >
-              {preset.name}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -129,26 +108,21 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         >
           {isPaused ? '▶️ Start' : '⏸️ Pauza'}
         </button>
-        
+
         <button onClick={onReset} className="btn btn-primary">
           🔄 Reset
         </button>
-        
+
         <button onClick={onClearAll} className="btn btn-danger">
           🗑️ Usuń wszystkie
         </button>
       </div>
 
       <div className="info-section">
-        <div className="info-row">
-          <span>Liczba obiektów:</span>
-          <strong>{bodyCount}</strong>
-        </div>
         <p className="info-text">
           {interactionMode === 'edit'
             ? '✏️ Tryb edycji: Kliknij i przeciągnij, aby dodać obiekt z prędkością'
-            : '📷 Tryb kamery: Przeciągaj myszą aby obracać kamerę, scroll aby przybliżać'
-          }
+            : '📷 Tryb kamery: Przeciągaj myszą aby obracać kamerę, scroll aby przybliżać'}
         </p>
       </div>
     </div>

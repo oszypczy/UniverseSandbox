@@ -11,7 +11,6 @@ interface Scene3DProps {
   showTrails: boolean;
   isPaused: boolean;
   interactionMode: InteractionMode;
-  onBodyCountChange?: (count: number) => void;
 }
 
 export interface Scene3DHandle {
@@ -21,7 +20,7 @@ export interface Scene3DHandle {
 }
 
 export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
-  ({ mass, timeScale, showTrails, isPaused, interactionMode, onBodyCountChange }, ref) => {
+  ({ mass, timeScale, showTrails, isPaused, interactionMode }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null!);
 
     // Inicjalizacja sceny Three.js
@@ -37,23 +36,21 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
     };
 
     // Hook symulacji
-    const { addBody, removeAllBodies, reset, notifyBodyCountChange } = useSimulation({
+    const { addBody, removeAllBodies, reset } = useSimulation({
       scene,
       renderer,
       camera,
       config,
       isPaused,
       showTrails,
-      onBodyCountChange,
     });
 
     // Callback dla tworzenia nowych ciał
     const handleBodyCreate = useCallback(
       (params: { position: THREE.Vector3; velocity: THREE.Vector3; mass: number }) => {
         addBody(params);
-        notifyBodyCountChange();
       },
-      [addBody, notifyBodyCountChange]
+      [addBody]
     );
 
     // Hook interakcji myszą (tylko w trybie edit)
@@ -72,11 +69,9 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
       () => ({
         removeAllBodies: () => {
           removeAllBodies();
-          notifyBodyCountChange();
         },
         reset: () => {
           reset();
-          notifyBodyCountChange();
         },
         loadPreset: (preset: Preset) => {
           // Clear existing bodies
@@ -99,12 +94,9 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
               color: bodyParams.color,
             });
           });
-
-          // Update body count
-          notifyBodyCountChange();
         },
       }),
-      [removeAllBodies, reset, addBody, notifyBodyCountChange]
+      [removeAllBodies, reset, addBody]
     );
 
     return (

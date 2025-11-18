@@ -3,6 +3,7 @@ import { Scene3D } from './components/Scene3D';
 import type { Scene3DHandle } from './components/Scene3D';
 import type { InteractionMode, Preset } from './types';
 import { ControlPanel } from './components/ControlPanel';
+import { PresetBar } from './components/PresetBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UI_CONSTANTS } from './utils/constants';
 import './App.css';
@@ -12,7 +13,6 @@ function App() {
   const [timeScale, setTimeScale] = useState(UI_CONSTANTS.DEFAULT_TIME_SCALE);
   const [showTrails, setShowTrails] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
-  const [bodyCount, setBodyCount] = useState(0);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('edit');
 
   const scene3DRef = useRef<Scene3DHandle>(null);
@@ -23,7 +23,6 @@ function App() {
 
   const handleReset = () => {
     scene3DRef.current?.reset();
-    setBodyCount(0);
     setIsPaused(false);
     setMass(UI_CONSTANTS.DEFAULT_MASS);
     setTimeScale(UI_CONSTANTS.DEFAULT_TIME_SCALE);
@@ -32,7 +31,6 @@ function App() {
 
   const handleClearAll = () => {
     scene3DRef.current?.removeAllBodies();
-    setBodyCount(0);
   };
 
   const handleLoadPreset = (preset: Preset) => {
@@ -50,7 +48,6 @@ function App() {
           showTrails={showTrails}
           isPaused={isPaused}
           interactionMode={interactionMode}
-          onBodyCountChange={setBodyCount}
         />
         <ControlPanel
           mass={mass}
@@ -63,15 +60,10 @@ function App() {
           onTogglePause={handleTogglePause}
           onReset={handleReset}
           onClearAll={handleClearAll}
-          onLoadPreset={handleLoadPreset}
-          bodyCount={bodyCount}
           interactionMode={interactionMode}
           onInteractionModeChange={setInteractionMode}
         />
-        <div className="app-title">
-          <h1>Symulator Grawitacyjny</h1>
-          <p>Interaktywna wizualizacja problemu N-ciał</p>
-        </div>
+        <PresetBar onLoadPreset={handleLoadPreset} />
       </div>
     </ErrorBoundary>
   );

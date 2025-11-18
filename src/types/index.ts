@@ -29,11 +29,11 @@ export interface Body {
 // ===== Konfiguracja symulacji =====
 
 export interface SimulationConfig {
-  G: number;                    // Stała grawitacyjna
-  timeScale: number;            // Mnożnik szybkości czasu
-  maxBodies: number;            // Limit obiektów
-  collisionsEnabled: boolean;   // Czy włączone kolizje
-  minDistance: number;          // Min odległość dla obliczeń
+  G: number; // Stała grawitacyjna
+  timeScale: number; // Mnożnik szybkości czasu
+  maxBodies: number; // Limit obiektów
+  collisionsEnabled: boolean; // Czy włączone kolizje
+  minDistance: number; // Min odległość dla obliczeń
 }
 
 export interface SimulationState {
@@ -71,4 +71,12 @@ export interface Preset {
   name: string;
   description: string;
   bodies: BodyParams[];
+}
+
+// ===== Particle System =====
+
+export interface ParticleSystem extends THREE.Points {
+  velocities: THREE.Vector3[];
+  lifeTime: number;
+  maxLifeTime: number;
 }

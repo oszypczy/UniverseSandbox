@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import * as THREE from 'three';
 import { useThreeScene } from '../hooks/useThreeScene';
 import { useSimulation } from '../hooks/useSimulation';
@@ -20,112 +20,105 @@ export interface Scene3DHandle {
   loadPreset: (preset: Preset) => void;
 }
 
-export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(({
-  mass,
-  timeScale,
-  showTrails,
-  isPaused,
-  interactionMode,
-  onBodyCountChange,
-}, ref) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null!);
+export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
+  ({ mass, timeScale, showTrails, isPaused, interactionMode, onBodyCountChange }, ref) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null!);
 
-  // Inicjalizacja sceny Three.js
-  const { scene, camera, renderer, controls } = useThreeScene({
-    canvasRef,
-    interactionMode,
-  });
+    // Inicjalizacja sceny Three.js
+    const { scene, camera, renderer } = useThreeScene({
+      canvasRef,
+      interactionMode,
+    });
 
-  // Konfiguracja symulacji
-  const config: Partial<SimulationConfig> = {
-    timeScale,
-    collisionsEnabled: true,
-  };
+    // Konfiguracja symulacji
+    const config: Partial<SimulationConfig> = {
+      timeScale,
+      collisionsEnabled: true,
+    };
 
-  // Hook symulacji
-  const { addBody, removeAllBodies, reset, getBodyCount } = useSimulation({
-    scene,
-    renderer,
-    camera,
-    config,
-    isPaused,
-    showTrails,
-  });
+    // Hook symulacji
+    const { addBody, removeAllBodies, reset, notifyBodyCountChange } = useSimulation({
+      scene,
+      renderer,
+      camera,
+      config,
+      isPaused,
+      showTrails,
+      onBodyCountChange,
+    });
 
-  // Callback dla tworzenia nowych ciał
-  const handleBodyCreate = useCallback((params: {
-    position: THREE.Vector3;
-    velocity: THREE.Vector3;
-    mass: number;
-  }) => {
-    addBody(params);
-    
-    // Aktualizuj licznik obiektów
-    if (onBodyCountChange) {
-      setTimeout(() => {
-        onBodyCountChange(getBodyCount());
-      }, 0);
-    }
-  }, [addBody, getBodyCount, onBodyCountChange]);
+    // Callback dla tworzenia nowych ciał
+    const handleBodyCreate = useCallback(
+      (params: { position: THREE.Vector3; velocity: THREE.Vector3; mass: number }) => {
+        addBody(params);
+        notifyBodyCountChange();
+      },
+      [addBody, notifyBodyCountChange]
+    );
 
-  // Hook interakcji myszą (tylko w trybie edit)
-  useMouseInteraction({
-    canvasRef,
-    camera,
-    scene,
-    enabled: interactionMode === 'edit',
-    onBodyCreate: handleBodyCreate,
-    mass,
-  });
+    // Hook interakcji myszą (tylko w trybie edit)
+    useMouseInteraction({
+      canvasRef,
+      camera,
+      scene,
+      enabled: interactionMode === 'edit',
+      onBodyCreate: handleBodyCreate,
+      mass,
+    });
 
-  // Expose functions to parent via ref
-  useImperativeHandle(ref, () => ({
-    removeAllBodies: () => {
-      removeAllBodies();
-      if (onBodyCountChange) {
-        onBodyCountChange(0);
-      }
-    },
-    reset: () => {
-      reset();
-      if (onBodyCountChange) {
-        onBodyCountChange(0);
-      }
-    },
-    loadPreset: (preset: Preset) => {
-      // Clear existing bodies
-      removeAllBodies();
+    // Expose functions to parent via ref
+    useImperativeHandle(
+      ref,
+      () => ({
+        removeAllBodies: () => {
+          removeAllBodies();
+          notifyBodyCountChange();
+        },
+        reset: () => {
+          reset();
+          notifyBodyCountChange();
+        },
+        loadPreset: (preset: Preset) => {
+          // Clear existing bodies
+          removeAllBodies();
 
-      // Add all bodies from preset
-      preset.bodies.forEach(bodyParams => {
-        addBody({
-          position: new THREE.Vector3(bodyParams.position.x, bodyParams.position.y, bodyParams.position.z),
-          velocity: new THREE.Vector3(bodyParams.velocity.x, bodyParams.velocity.y, bodyParams.velocity.z),
-          mass: bodyParams.mass,
-          color: bodyParams.color,
-        });
-      });
+          // Add all bodies from preset
+          preset.bodies.forEach((bodyParams) => {
+            addBody({
+              position: new THREE.Vector3(
+                bodyParams.position.x,
+                bodyParams.position.y,
+                bodyParams.position.z
+              ),
+              velocity: new THREE.Vector3(
+                bodyParams.velocity.x,
+                bodyParams.velocity.y,
+                bodyParams.velocity.z
+              ),
+              mass: bodyParams.mass,
+              color: bodyParams.color,
+            });
+          });
 
-      // Update body count
-      if (onBodyCountChange) {
-        setTimeout(() => {
-          onBodyCountChange(getBodyCount());
-        }, 0);
-      }
-    },
-  }), [removeAllBodies, reset, addBody, getBodyCount, onBodyCountChange]);
+          // Update body count
+          notifyBodyCountChange();
+        },
+      }),
+      [removeAllBodies, reset, addBody, notifyBodyCountChange]
+    );
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        display: 'block',
-        width: '100vw',
-        height: '100vh',
-        cursor: interactionMode === 'edit' ? 'crosshair' : 'grab',
-      }}
-    />
-  );
-});
+    return (
+      <canvas
+        ref={canvasRef}
+        style={{
+          display: 'block',
+          width: '100vw',
+          height: '100vh',
+          cursor: interactionMode === 'edit' ? 'crosshair' : 'grab',
+        }}
+      />
+    );
+  }
+);
 
 Scene3D.displayName = 'Scene3D';

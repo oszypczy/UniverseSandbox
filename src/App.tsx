@@ -3,6 +3,7 @@ import { Scene3D } from './components/Scene3D';
 import type { Scene3DHandle } from './components/Scene3D';
 import type { InteractionMode, Preset } from './types';
 import { ControlPanel } from './components/ControlPanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { UI_CONSTANTS } from './utils/constants';
 import './App.css';
 
@@ -13,7 +14,7 @@ function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [bodyCount, setBodyCount] = useState(0);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('edit');
-  
+
   const scene3DRef = useRef<Scene3DHandle>(null);
 
   const handleTogglePause = () => {
@@ -40,37 +41,39 @@ function App() {
   };
 
   return (
-    <div className="app">
-      <Scene3D
-        ref={scene3DRef}
-        mass={mass}
-        timeScale={timeScale}
-        showTrails={showTrails}
-        isPaused={isPaused}
-        interactionMode={interactionMode}
-        onBodyCountChange={setBodyCount}
-      />
-      <ControlPanel
-        mass={mass}
-        onMassChange={setMass}
-        timeScale={timeScale}
-        onTimeScaleChange={setTimeScale}
-        showTrails={showTrails}
-        onShowTrailsChange={setShowTrails}
-        isPaused={isPaused}
-        onTogglePause={handleTogglePause}
-        onReset={handleReset}
-        onClearAll={handleClearAll}
-        onLoadPreset={handleLoadPreset}
-        bodyCount={bodyCount}
-        interactionMode={interactionMode}
-        onInteractionModeChange={setInteractionMode}
-      />
-      <div className="app-title">
-        <h1>Symulator Grawitacyjny</h1>
-        <p>Interaktywna wizualizacja problemu N-ciał</p>
+    <ErrorBoundary>
+      <div className="app">
+        <Scene3D
+          ref={scene3DRef}
+          mass={mass}
+          timeScale={timeScale}
+          showTrails={showTrails}
+          isPaused={isPaused}
+          interactionMode={interactionMode}
+          onBodyCountChange={setBodyCount}
+        />
+        <ControlPanel
+          mass={mass}
+          onMassChange={setMass}
+          timeScale={timeScale}
+          onTimeScaleChange={setTimeScale}
+          showTrails={showTrails}
+          onShowTrailsChange={setShowTrails}
+          isPaused={isPaused}
+          onTogglePause={handleTogglePause}
+          onReset={handleReset}
+          onClearAll={handleClearAll}
+          onLoadPreset={handleLoadPreset}
+          bodyCount={bodyCount}
+          interactionMode={interactionMode}
+          onInteractionModeChange={setInteractionMode}
+        />
+        <div className="app-title">
+          <h1>Symulator Grawitacyjny</h1>
+          <p>Interaktywna wizualizacja problemu N-ciał</p>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }
 

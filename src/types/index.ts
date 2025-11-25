@@ -21,9 +21,11 @@ export interface Body {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
   acceleration: THREE.Vector3;
+  prevAcceleration?: THREE.Vector3; // Dla metody Velocity Verlet
   mesh: THREE.Mesh;
   trail?: THREE.Line;
   trailPoints: THREE.Vector3[];
+  velocityArrow?: THREE.ArrowHelper;
 }
 
 // ===== Konfiguracja symulacji =====

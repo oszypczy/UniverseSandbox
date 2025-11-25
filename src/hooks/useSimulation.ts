@@ -9,8 +9,8 @@ interface UseSimulationProps {
   renderer: THREE.WebGLRenderer | null;
   camera: THREE.PerspectiveCamera | null;
   config: Partial<SimulationConfig>;
-  isPaused: boolean;
   showTrails: boolean;
+  showVelocityVectors: boolean;
 }
 
 export function useSimulation({
@@ -18,8 +18,8 @@ export function useSimulation({
   renderer,
   camera,
   config,
-  isPaused,
   showTrails,
+  showVelocityVectors,
 }: UseSimulationProps) {
   const engineRef = useRef<PhysicsEngine | null>(null);
   const animationFrameRef = useRef<number>(0);
@@ -66,6 +66,8 @@ export function useSimulation({
         // Stwórz nowy trail jeśli są punkty
         if (body.trailPoints.length > 1) {
           const geometry = new THREE.BufferGeometry().setFromPoints(body.trailPoints);
+
+          // Pobierz kolor z materiału
           const material = new THREE.LineBasicMaterial({
             color: (body.mesh.material as THREE.MeshPhongMaterial).color,
             transparent: true,
@@ -78,6 +80,57 @@ export function useSimulation({
       });
     },
     [scene]
+  );
+
+  // Funkcja aktualizacji wektorów prędkości
+  const updateVelocityVectors = useCallback(
+    (bodies: Body[]) => {
+      if (!scene) return;
+
+      bodies.forEach((body) => {
+        if (showVelocityVectors) {
+          const velocityMagnitude = body.velocity.length();
+
+          // Skalowanie długości strzałki (min 2, max 15)
+          const arrowLength = Math.min(15, Math.max(2, velocityMagnitude * 2));
+
+          // Kierunek strzałki (znormalizowany wektor prędkości)
+          const direction = body.velocity.clone().normalize();
+
+          // Kolor strzałki - od zielonego (wolno) do czerwonego (szybko)
+          const speedRatio = Math.min(1, velocityMagnitude / 10);
+          const color = new THREE.Color(speedRatio, 1 - speedRatio * 0.5, 0);
+
+          // Usuń starą strzałkę jeśli istnieje
+          if (body.velocityArrow) {
+            scene.remove(body.velocityArrow);
+            body.velocityArrow.dispose();
+          }
+
+          // Stwórz nową strzałkę
+          if (velocityMagnitude > 0.1) {
+            // Nie pokazuj dla bardzo małych prędkości
+            body.velocityArrow = new THREE.ArrowHelper(
+              direction,
+              body.position,
+              arrowLength,
+              color,
+              arrowLength * 0.2, // Długość stożka
+              arrowLength * 0.15 // Szerokość stożka
+            );
+            scene.add(body.velocityArrow);
+          }
+        } else {
+          // Usuń strzałkę jeśli wizualizacja jest wyłączona
+          if (body.velocityArrow) {
+            scene.remove(body.velocityArrow);
+            body.velocityArrow.dispose();
+            body.velocityArrow = undefined;
+          }
+        }
+      });
+    },
+    [scene, showVelocityVectors]
   );
 
   // Funkcja tworzenia efektu flash
@@ -145,17 +198,46 @@ export function useSimulation({
     (deltaTime: number, bodies: Body[]) => {
       if (!scene) return;
 
+      // Aktualizuj animację gwiazd (subtelne pulsowanie)
+      const time = Date.now() / 1000;
+      bodies.forEach((body) => {
+        if (body.mesh.userData.isStar) {
+          const material = body.mesh.material as THREE.MeshPhongMaterial;
+          const pulseSpeed = 0.5;
+          const pulseAmplitude = 0.1;
+          const baseIntensity = 1.0;
+
+          // Subtelne pulsowanie świecenia
+          material.emissiveIntensity =
+            baseIntensity + Math.sin(time * pulseSpeed + body.id.length) * pulseAmplitude;
+
+          // Lekkie pulsowanie światła
+          const light = body.mesh.children.find(
+            (child) => child instanceof THREE.PointLight
+          ) as THREE.PointLight;
+          if (light) {
+            light.intensity = 5 + Math.sin(time * pulseSpeed * 0.8 + body.id.length) * 0.5;
+          }
+        }
+      });
+
       // Aktualizuj flash effects
       flashEffectsRef.current.forEach((effect, bodyId) => {
         const body = bodies.find((b) => b.id === bodyId);
         if (body) {
-          const material = body.mesh.material as THREE.MeshPhongMaterial;
-          material.emissiveIntensity = 0.2 + effect.intensity * 1.5;
+          const material = body.mesh.material;
+
+          // Flash effects tylko dla MeshPhongMaterial (planety)
+          if (material instanceof THREE.MeshPhongMaterial) {
+            material.emissiveIntensity = 0.2 + effect.intensity * 1.5;
+          }
 
           effect.intensity -= deltaTime / effect.duration;
 
           if (effect.intensity <= 0) {
-            material.emissiveIntensity = 0.2;
+            if (material instanceof THREE.MeshPhongMaterial) {
+              material.emissiveIntensity = 0.2;
+            }
             flashEffectsRef.current.delete(bodyId);
           }
         } else {
@@ -223,8 +305,9 @@ export function useSimulation({
         lastTimeRef.current === 0 ? 0.016 : Math.min((time - lastTimeRef.current) / 1000, 0.1); // Cap at 100ms
       lastTimeRef.current = time;
 
-      // Tylko aktualizuj fizykę gdy nie jest wstrzymane
-      if (!isPaused) {
+      // Tylko aktualizuj fizykę gdy timeScale > 0
+      const timeScale = config.timeScale ?? 1.0;
+      if (timeScale > 0) {
         // Aktualizuj fizykę i zbierz zdarzenia kolizji
         const collisionEvents = engineRef.current.update(deltaTime);
 
@@ -235,6 +318,10 @@ export function useSimulation({
             scene.remove(body.mesh);
             if (body.trail) {
               scene.remove(body.trail);
+            }
+            if (body.velocityArrow) {
+              scene.remove(body.velocityArrow);
+              body.velocityArrow.dispose();
             }
           });
 
@@ -263,6 +350,9 @@ export function useSimulation({
         }
       }
 
+      // Aktualizuj wektory prędkości (zawsze, nawet gdy wstrzymane, żeby były widoczne)
+      updateVelocityVectors(engineRef.current.getBodies());
+
       // Aktualizuj efekty wizualne (zawsze, nawet gdy wstrzymane)
       updateEffects(deltaTime, engineRef.current.getBodies());
 
@@ -275,9 +365,10 @@ export function useSimulation({
       scene,
       renderer,
       camera,
-      isPaused,
+      config.timeScale,
       showTrails,
       updateTrails,
+      updateVelocityVectors,
       createFlashEffect,
       createCollisionParticles,
       updateEffects,
@@ -329,6 +420,10 @@ export function useSimulation({
       if (body.trail) {
         scene.remove(body.trail);
       }
+      if (body.velocityArrow) {
+        scene.remove(body.velocityArrow);
+        body.velocityArrow.dispose();
+      }
     });
 
     engineRef.current.removeAllBodies();
@@ -362,6 +457,39 @@ export function useSimulation({
     return engineRef.current?.calculateTotalEnergy() || 0;
   }, []);
 
+  const getBodyById = useCallback((id: string) => {
+    return engineRef.current?.getBodyById(id);
+  }, []);
+
+  const updateBody = useCallback(
+    (id: string, updates: { mass?: number; velocity?: THREE.Vector3 }) => {
+      if (!engineRef.current) return;
+      engineRef.current.updateBody(id, updates);
+    },
+    []
+  );
+
+  const removeBody = useCallback(
+    (id: string) => {
+      if (!engineRef.current || !scene) return;
+
+      const body = engineRef.current.getBodyById(id);
+      if (body) {
+        scene.remove(body.mesh);
+        if (body.trail) {
+          scene.remove(body.trail);
+        }
+        if (body.velocityArrow) {
+          scene.remove(body.velocityArrow);
+          body.velocityArrow.dispose();
+        }
+      }
+
+      engineRef.current.removeBody(id);
+    },
+    [scene]
+  );
+
   return {
     addBody,
     removeAllBodies,
@@ -369,5 +497,8 @@ export function useSimulation({
     getBodies,
     getBodyCount,
     getTotalEnergy,
+    getBodyById,
+    updateBody,
+    removeBody,
   };
 }

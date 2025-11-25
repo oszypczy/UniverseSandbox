@@ -1,35 +1,36 @@
 import React from 'react';
-import type { InteractionMode } from '../types';
+import type { InteractionMode, Preset } from '../types';
+import { PRESETS } from '../utils/presets';
 import './ControlPanel.css';
 
 interface ControlPanelProps {
-  mass: number;
-  onMassChange: (value: number) => void;
   timeScale: number;
   onTimeScaleChange: (value: number) => void;
   showTrails: boolean;
   onShowTrailsChange: (value: boolean) => void;
-  isPaused: boolean;
-  onTogglePause: () => void;
-  onReset: () => void;
+  showVelocityVectors: boolean;
+  onShowVelocityVectorsChange: (value: boolean) => void;
   onClearAll: () => void;
   interactionMode: InteractionMode;
   onInteractionModeChange: (mode: InteractionMode) => void;
+  onLoadPreset: (preset: Preset, presetKey: string) => void;
+  onResetPreset: () => void;
+  currentPreset: string | null;
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
-  mass,
-  onMassChange,
   timeScale,
   onTimeScaleChange,
   showTrails,
   onShowTrailsChange,
-  isPaused,
-  onTogglePause,
-  onReset,
+  showVelocityVectors,
+  onShowVelocityVectorsChange,
   onClearAll,
   interactionMode,
   onInteractionModeChange,
+  onLoadPreset,
+  onResetPreset,
+  currentPreset,
 }) => {
   return (
     <div className="control-panel">
@@ -53,22 +54,36 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </div>
       </div>
 
-      <div className="control-section">
-        <label>
-          Masa obiektu: <strong>{mass}</strong>
-          <input
-            type="range"
-            min="1"
-            max="1000"
-            value={mass}
-            onChange={(e) => onMassChange(Number(e.target.value))}
-            className="slider"
-          />
-          <div className="slider-labels">
-            <span>1</span>
-            <span>1000</span>
-          </div>
-        </label>
+      <div className="control-section preset-section">
+        <label>Scenariusze:</label>
+        <div className="preset-controls">
+          <select
+            className="preset-dropdown"
+            onChange={(e) => {
+              const presetKey = e.target.value;
+              if (presetKey && PRESETS[presetKey]) {
+                onLoadPreset(PRESETS[presetKey], presetKey);
+              }
+            }}
+            value={currentPreset || ''}
+          >
+            <option value="">Wybierz scenariusz...</option>
+            {Object.entries(PRESETS).map(([key, preset]) => (
+              <option key={key} value={key}>
+                {preset.name}
+              </option>
+            ))}
+          </select>
+          {currentPreset && (
+            <button
+              onClick={onResetPreset}
+              className="btn btn-reset"
+              title="Zresetuj aktualny scenariusz"
+            >
+              🔄 Reset
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="control-section">
@@ -76,16 +91,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           Szybkość czasu: <strong>{timeScale.toFixed(1)}x</strong>
           <input
             type="range"
-            min="0.1"
-            max="2"
+            min="0"
+            max="10"
             step="0.1"
             value={timeScale}
             onChange={(e) => onTimeScaleChange(Number(e.target.value))}
             className="slider"
           />
           <div className="slider-labels">
-            <span>0.1x</span>
-            <span>2.0x</span>
+            <span>0.0x</span>
+            <span>10.0x</span>
           </div>
         </label>
       </div>
@@ -101,29 +116,21 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </label>
       </div>
 
+      <div className="control-section">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={showVelocityVectors}
+            onChange={(e) => onShowVelocityVectorsChange(e.target.checked)}
+          />
+          <span>Pokaż wektory prędkości</span>
+        </label>
+      </div>
+
       <div className="control-section buttons">
-        <button
-          onClick={onTogglePause}
-          className={`btn ${isPaused ? 'btn-success' : 'btn-warning'}`}
-        >
-          {isPaused ? '▶️ Start' : '⏸️ Pauza'}
-        </button>
-
-        <button onClick={onReset} className="btn btn-primary">
-          🔄 Reset
-        </button>
-
         <button onClick={onClearAll} className="btn btn-danger">
           🗑️ Usuń wszystkie
         </button>
-      </div>
-
-      <div className="info-section">
-        <p className="info-text">
-          {interactionMode === 'edit'
-            ? '✏️ Tryb edycji: Kliknij i przeciągnij, aby dodać obiekt z prędkością'
-            : '📷 Tryb kamery: Przeciągaj myszą aby obracać kamerę, scroll aby przybliżać'}
-        </p>
       </div>
     </div>
   );

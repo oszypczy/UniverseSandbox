@@ -6,21 +6,31 @@ import { useMouseInteraction } from '../hooks/useMouseInteraction';
 import type { SimulationConfig, InteractionMode, Preset } from '../types';
 
 interface Scene3DProps {
-  mass: number;
   timeScale: number;
   showTrails: boolean;
-  isPaused: boolean;
+  showVelocityVectors: boolean;
   interactionMode: InteractionMode;
+  onBodySelect?: (bodyId: string | null) => void;
+  defaultMass: number;
+  selectedBodyId: string | null;
 }
 
 export interface Scene3DHandle {
   removeAllBodies: () => void;
   reset: () => void;
   loadPreset: (preset: Preset) => void;
+  getBodyById: (
+    id: string
+  ) => { id: string; mass: number; velocity: { x: number; y: number; z: number } } | undefined;
+  updateBody: (id: string, updates: { mass?: number; velocity?: THREE.Vector3 }) => void;
+  removeBody: (id: string) => void;
 }
 
 export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
-  ({ mass, timeScale, showTrails, isPaused, interactionMode }, ref) => {
+  (
+    { timeScale, showTrails, showVelocityVectors, interactionMode, onBodySelect, defaultMass },
+    ref
+  ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null!);
 
     // Inicjalizacja sceny Three.js
@@ -36,13 +46,13 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
     };
 
     // Hook symulacji
-    const { addBody, removeAllBodies, reset } = useSimulation({
+    const { addBody, removeAllBodies, reset, getBodyById, updateBody, removeBody } = useSimulation({
       scene,
       renderer,
       camera,
       config,
-      isPaused,
       showTrails,
+      showVelocityVectors,
     });
 
     // Callback dla tworzenia nowych ciał
@@ -54,13 +64,14 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
     );
 
     // Hook interakcji myszą (tylko w trybie edit)
-    useMouseInteraction({
+    const { isOverBody } = useMouseInteraction({
       canvasRef,
       camera,
       scene,
       enabled: interactionMode === 'edit',
       onBodyCreate: handleBodyCreate,
-      mass,
+      onBodySelect,
+      defaultMass,
     });
 
     // Expose functions to parent via ref
@@ -95,9 +106,25 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
             });
           });
         },
+        getBodyById: (id: string) => {
+          return getBodyById(id);
+        },
+        updateBody: (id: string, updates: { mass?: number; velocity?: THREE.Vector3 }) => {
+          updateBody(id, updates);
+        },
+        removeBody: (id: string) => {
+          removeBody(id);
+        },
       }),
-      [removeAllBodies, reset, addBody]
+      [removeAllBodies, reset, addBody, getBodyById, updateBody, removeBody]
     );
+
+    // Określ kursor na podstawie kontekstu
+    const getCursor = () => {
+      if (interactionMode === 'camera') return 'grab';
+      if (isOverBody) return 'pointer';
+      return 'crosshair';
+    };
 
     return (
       <canvas
@@ -106,7 +133,7 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
           display: 'block',
           width: '100vw',
           height: '100vh',
-          cursor: interactionMode === 'edit' ? 'crosshair' : 'grab',
+          cursor: getCursor(),
         }}
       />
     );

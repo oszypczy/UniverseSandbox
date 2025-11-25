@@ -24,7 +24,7 @@ export function useThreeScene({
   const [camera, setCamera] = useState<THREE.PerspectiveCamera | null>(null);
   const [renderer, setRenderer] = useState<THREE.WebGLRenderer | null>(null);
   const [controls, setControls] = useState<OrbitControls | null>(null);
-  
+
   const animationFrameRef = useRef<number>(0);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function useThreeScene({
     // ===== Scena =====
     const newScene = new THREE.Scene();
     newScene.background = new THREE.Color(COLORS.BACKGROUND);
-    
+
     // ===== Pole gwiazdowe =====
     const starsGeometry = new THREE.BufferGeometry();
     const starsMaterial = new THREE.PointsMaterial({
@@ -51,16 +51,16 @@ export function useThreeScene({
 
     for (let i = 0; i < starsCount; i++) {
       const i3 = i * 3;
-      
+
       // Losowa pozycja w sferze
       const radius = 300 + Math.random() * 200;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      
+
       positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
       positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
       positions[i3 + 2] = radius * Math.cos(phi);
-      
+
       // Losowy kolor gwiazdy (odcienie bieli/niebieskiego)
       const colorVariation = 0.8 + Math.random() * 0.2;
       colors[i3] = colorVariation;
@@ -70,10 +70,10 @@ export function useThreeScene({
 
     starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     starsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    
+
     const starField = new THREE.Points(starsGeometry, starsMaterial);
     newScene.add(starField);
-    
+
     // Mgła dla efektu głębi
     newScene.fog = new THREE.FogExp2(COLORS.BACKGROUND, 0.0005);
 
@@ -95,21 +95,10 @@ export function useThreeScene({
     newRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // ===== Oświetlenie =====
-    
-    // Światło otoczenia (ambient light)
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+
+    // Minimalne światło otoczenia - większość światła pochodzi od Słońca
+    const ambientLight = new THREE.AmbientLight(0x111122, 0.15);
     newScene.add(ambientLight);
-    
-    // Światło punktowe (point light)
-    const pointLight = new THREE.PointLight(0xffffff, 1, 100);
-    pointLight.position.set(0, 20, 20);
-    pointLight.castShadow = true;
-    newScene.add(pointLight);
-    
-    // Dodatkowe światło kierunkowe dla lepszej widoczności
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    directionalLight.position.set(-10, 10, 5);
-    newScene.add(directionalLight);
 
     // ===== Kontrole kamery (OrbitControls) =====
     const newControls = new OrbitControls(newCamera, newRenderer.domElement);
@@ -120,7 +109,7 @@ export function useThreeScene({
     newControls.enablePan = true;
     newControls.panSpeed = 1.0;
     newControls.screenSpacePanning = true;
-    
+
     // Kontrole są aktywne tylko w trybie camera
     newControls.enabled = interactionMode === 'camera';
 
@@ -159,14 +148,14 @@ export function useThreeScene({
     // ===== Cleanup =====
     return () => {
       window.removeEventListener('resize', handleResize);
-      
+
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
 
       newControls.dispose();
       newRenderer.dispose();
-      
+
       // Cleanup scene
       newScene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
@@ -182,6 +171,7 @@ export function useThreeScene({
   // Dynamiczne przełączanie OrbitControls gdy zmienia się tryb
   useEffect(() => {
     if (controls) {
+      // eslint-disable-next-line react-hooks/immutability
       controls.enabled = interactionMode === 'camera';
     }
   }, [controls, interactionMode]);

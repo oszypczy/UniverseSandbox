@@ -1,0 +1,56 @@
+.scientific-notation-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scientific-label {
+  font-size: 14px;
+  color: #b0b0d0;
+  font-weight: 500;
+}
+
+.scientific-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mantissa-input,
+.exponent-input {
+  background: rgba(30, 30, 60, 0.8);
+  border: 1px solid rgba(100, 150, 255, 0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #e0e0ff;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.mantissa-input {
+  width: 80px;
+}
+
+.exponent-input {
+  width: 60px;
+}
+
+.mantissa-input:focus,
+.exponent-input:focus {
+  outline: none;
+  border-color: rgba(100, 150, 255, 0.6);
+  background: rgba(40, 40, 80, 0.9);
+}
+
+.times-symbol {
+  color: #b0b0d0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.scientific-hint {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  padding-left: 4px;
+}

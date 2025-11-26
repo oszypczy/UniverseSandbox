@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Body } from '../types';
 import './BodyEditor.css';
 
+interface BodyData {
+  id: string;
+  mass: number;
+  velocity: { x: number; y: number; z: number };
+}
+
 interface BodyEditorProps {
-  body: Body | null;
+  body: BodyData | null;
   onUpdate: (
     bodyId: string,
     updates: { mass?: number; velocity?: { x: number; y: number; z: number } }

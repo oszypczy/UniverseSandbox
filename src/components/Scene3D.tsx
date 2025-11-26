@@ -24,6 +24,8 @@ export interface Scene3DHandle {
   ) => { id: string; mass: number; velocity: { x: number; y: number; z: number } } | undefined;
   updateBody: (id: string, updates: { mass?: number; velocity?: THREE.Vector3 }) => void;
   removeBody: (id: string) => void;
+  getBodyCount: () => number;
+  getTotalEnergy: () => number;
 }
 
 export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
@@ -46,7 +48,16 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
     };
 
     // Hook symulacji
-    const { addBody, removeAllBodies, reset, getBodyById, updateBody, removeBody } = useSimulation({
+    const {
+      addBody,
+      removeAllBodies,
+      reset,
+      getBodyById,
+      updateBody,
+      removeBody,
+      getBodyCount,
+      getTotalEnergy,
+    } = useSimulation({
       scene,
       renderer,
       camera,
@@ -115,8 +126,23 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
         removeBody: (id: string) => {
           removeBody(id);
         },
+        getBodyCount: () => {
+          return getBodyCount();
+        },
+        getTotalEnergy: () => {
+          return getTotalEnergy();
+        },
       }),
-      [removeAllBodies, reset, addBody, getBodyById, updateBody, removeBody]
+      [
+        removeAllBodies,
+        reset,
+        addBody,
+        getBodyById,
+        updateBody,
+        removeBody,
+        getBodyCount,
+        getTotalEnergy,
+      ]
     );
 
     // Określ kursor na podstawie kontekstu

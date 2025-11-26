@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { Scene3D } from './components/Scene3D';
 import type { Scene3DHandle } from './components/Scene3D';
@@ -6,6 +6,9 @@ import type { InteractionMode, Preset } from './types';
 import { ControlPanel } from './components/ControlPanel';
 import { BodyEditor } from './components/BodyEditor';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { Tutorial, HelpButton } from './components/Tutorial';
+import { HUD } from './components/HUD';
+import { useFPS } from './hooks/useFPS';
 import { UI_CONSTANTS } from './utils/constants';
 import './App.css';
 
@@ -18,14 +21,86 @@ function App() {
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('edit');
   const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
   const [currentPreset, setCurrentPreset] = useState<string | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [bodyCount, setBodyCount] = useState(0);
+  const [totalEnergy, setTotalEnergy] = useState<number | undefined>(undefined);
 
   const scene3DRef = useRef<Scene3DHandle>(null);
+  const fps = useFPS();
 
-  const handleClearAll = () => {
+  // Check if user has completed tutorial before
+  useEffect(() => {
+    const tutorialCompleted = localStorage.getItem('tutorial_completed');
+    if (!tutorialCompleted) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  // Update body count and total energy periodically
+  useEffect(() => {
+    const updateStats = () => {
+      if (scene3DRef.current) {
+        setBodyCount(scene3DRef.current.getBodyCount());
+        setTotalEnergy(scene3DRef.current.getTotalEnergy());
+      }
+    };
+
+    // Update every 100ms
+    const intervalId = setInterval(updateStats, 100);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'r':
+          // Reset simulation
+          if (currentPreset) {
+            handleResetPreset();
+          } else {
+            handleClearAll();
+          }
+          break;
+
+        case 'delete':
+        case 'backspace':
+          // Delete selected body
+          if (selectedBodyId) {
+            handleBodyDelete(selectedBodyId);
+          }
+          break;
+
+        case 'tab':
+          // Toggle interaction mode
+          e.preventDefault(); // Prevent default tab behavior
+          setInteractionMode((prev) => (prev === 'edit' ? 'camera' : 'edit'));
+          break;
+
+        case 'escape':
+          // Close body editor
+          if (selectedBodyId) {
+            setSelectedBodyId(null);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentPreset, selectedBodyId, handleResetPreset, handleClearAll, handleBodyDelete]);
+
+  const handleClearAll = useCallback(() => {
     scene3DRef.current?.removeAllBodies();
     setSelectedBodyId(null);
     setCurrentPreset(null);
-  };
+  }, []);
 
   const handleLoadPreset = (preset: Preset, presetKey: string) => {
     scene3DRef.current?.loadPreset(preset);
@@ -33,20 +108,27 @@ function App() {
     setCurrentPreset(presetKey);
   };
 
-  const handleResetPreset = () => {
+  const handleResetPreset = useCallback(() => {
     if (currentPreset) {
-      // Reload the current preset by clearing and reloading
-      handleClearAll();
+      // Save the current preset key before clearing
+      const presetKey = currentPreset;
+
+      // Clear bodies but don't reset currentPreset
+      scene3DRef.current?.removeAllBodies();
+      setSelectedBodyId(null);
+
       // Wait a frame to ensure cleanup is complete
       requestAnimationFrame(async () => {
         const { PRESETS } = await import('./utils/presets');
-        const preset = PRESETS[currentPreset];
+        const preset = PRESETS[presetKey];
         if (preset) {
           scene3DRef.current?.loadPreset(preset);
+          // Keep the preset loaded
+          setCurrentPreset(presetKey);
         }
       });
     }
-  };
+  }, [currentPreset]);
 
   const handleBodySelect = (bodyId: string | null) => {
     setSelectedBodyId(bodyId);
@@ -75,10 +157,10 @@ function App() {
     scene3DRef.current.updateBody(bodyId, updatedData);
   };
 
-  const handleBodyDelete = (bodyId: string) => {
+  const handleBodyDelete = useCallback((bodyId: string) => {
     scene3DRef.current?.removeBody(bodyId);
     setSelectedBodyId(null);
-  };
+  }, []);
 
   const handleCloseEditor = () => {
     setSelectedBodyId(null);
@@ -92,7 +174,8 @@ function App() {
 
   useEffect(() => {
     if (selectedBodyId && scene3DRef.current) {
-      setSelectedBody(scene3DRef.current.getBodyById(selectedBodyId));
+      const body = scene3DRef.current.getBodyById(selectedBodyId);
+      setSelectedBody(body || null);
     } else {
       setSelectedBody(null);
     }
@@ -133,6 +216,9 @@ function App() {
             onClose={handleCloseEditor}
           />
         )}
+        <HUD fps={fps} bodyCount={bodyCount} totalEnergy={totalEnergy} />
+        <HelpButton onClick={() => setShowTutorial(true)} />
+        {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
       </div>
     </ErrorBoundary>
   );

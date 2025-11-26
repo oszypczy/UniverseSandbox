@@ -39,12 +39,12 @@ npm run lint
 **PhysicsEngine** (`src/engine/PhysicsEngine.ts`): The heart of the simulation
 
 - Manages all celestial bodies and their physics calculations
-- Uses Newton's law of gravitation: F = G _ m1 _ m2 / r²
-- Euler integration method for motion updates
+- Uses Newton's law of gravitation: F = G \* m1 \* m2 / r²
+- **Velocity Verlet integration method** with **adaptive substepping** for accurate motion updates
 - Handles collisions by merging bodies (conservation of momentum)
 - Returns collision events for visual effects rendering
 - Key methods: `addBody()`, `update()`, `calculateGravitationalForces()`, `handleCollisions()`
-- **Recent improvements**: Multi-collision handling, event propagation system
+- **Recent improvements**: Multi-collision handling, event propagation system, Velocity Verlet integration
 
 **useSimulation** (`src/hooks/useSimulation.ts`): React hook bridging physics and rendering
 
@@ -65,15 +65,27 @@ npm run lint
 **useMouseInteraction** (`src/hooks/useMouseInteraction.ts`): User input handling
 
 - Converts 2D screen coordinates to 3D world space via raycasting
-- Click-and-drag interaction: starting point = position, drag vector = initial velocity
+- **Click-and-drag interaction**: starting point = position, drag vector = initial velocity
+- **Double-click**: creates stationary body at clicked position
+- **Single click**: selects body for editing (opens BodyEditor)
 - Shows visual feedback (preview sphere, velocity arrow)
+- Raycasting for body selection in 3D space
 
 **App.tsx**: Top-level state coordinator
 
-- Manages UI state (mass, timeScale, showTrails, isPaused)
-- Coordinates Scene3D and ControlPanel
+- Manages UI state (timeScale, showTrails, showVelocityVectors, interactionMode, selectedBodyId)
+- Coordinates Scene3D, ControlPanel, and BodyEditor
 - Exposes reset and clear operations via Scene3DHandle ref
+- Handles body selection and updates
 - Wrapped in ErrorBoundary for graceful error handling
+
+**BodyEditor** (`src/components/BodyEditor.tsx`): Interactive body editing component
+
+- Draggable panel for editing selected celestial bodies
+- Real-time mass and velocity adjustment
+- Delete functionality for individual bodies
+- Automatically updates physics simulation when values change
+- **New addition**: Allows precise control over body properties during simulation
 
 **ErrorBoundary** (`src/components/ErrorBoundary.tsx`): Error handling component
 
@@ -132,11 +144,14 @@ npm run lint
 
 **Gravitational constant**: `G = 0.5` (scaled for visualization, not real-world physics)
 
-**Integration method**: Semi-implicit Euler
+**Integration method**: Velocity Verlet with adaptive substepping
 
+- More accurate than Euler method, preserves energy better
+- Adaptive timestep: divides large timesteps into smaller substeps for stability
 - Acceleration: `a = F / m`
-- Velocity: `v_new = v_old + a * dt`
-- Position: `p_new = p_old + v * dt`
+- Position: `p_new = p_old + v * dt + 0.5 * a * dt²`
+- Velocity: `v_new = v_old + 0.5 * (a_old + a_new) * dt`
+- Substeps used when bodies are close or moving fast
 
 **Collision detection**: Multi-collision handling with event system
 
@@ -155,24 +170,31 @@ npm run lint
 
 - Body radius scales with `log(mass)` for better visualization
 - Color gradient: blue (small mass) → yellow (medium) → red (large)
-- Trails: max 100 points, stored per-body, rendered as Three.js Line
+- **Star glow effect**: Pulsating emissive glow for larger bodies
+- Trails: max 100 points, stored per-body, rendered as Three.js Line (can be toggled on/off)
+- **Velocity vectors**: Optional arrows showing velocity magnitude and direction (toggle in UI)
 - **Collision flash**: Glowing effect on merged body (0.5s duration)
 - **Particle explosion**: Orange particles with physics (gravity, fade-out) at collision point
 - Particles: 50 max, spherical emission, 1-second lifetime
+- **Selected body highlight**: Visual feedback when body is selected for editing
 
 ## Interaction Modes
 
-**Edit mode** ('edit'): Default, allows creating bodies
+**Edit mode** ('edit'): Default, allows creating and editing bodies
 
-- Click and drag to create a body with initial velocity
+- **Click and drag**: Create a body with initial velocity (drag vector)
+- **Double-click**: Create stationary body at clicked position
+- **Single click on body**: Select body for editing (opens BodyEditor panel)
 - OrbitControls disabled during drag
+- Can still rotate camera when not dragging
 
 **Camera mode** ('camera'): Pure navigation
 
-- Body creation disabled
+- Body creation and selection disabled
 - Full OrbitControls enabled (pan, rotate, zoom)
+- Use for exploring large simulations without accidental body creation
 
-Toggle between modes via ControlPanel
+Toggle between modes via ControlPanel (Edit/Camera button)
 
 ## Common Development Patterns
 
@@ -251,6 +273,24 @@ Toggle between modes via ControlPanel
 - ✅ Particle explosion system at collision points
 - ✅ Proper cleanup of visual effects on reset
 - ✅ Fixed ghost body rendering bug
+- ✅ Velocity vectors visualization (toggleable)
+- ✅ Star glow effect with pulsation
+- ✅ Selected body highlighting
+
+### User Experience
+
+- ✅ Interactive body editor (BodyEditor component)
+- ✅ Real-time mass and velocity adjustment
+- ✅ Body selection by clicking
+- ✅ Double-click to create stationary bodies
+- ✅ Improved interaction modes (Edit/Camera)
+
+### Physics Improvements
+
+- ✅ Upgraded to Velocity Verlet integration method
+- ✅ Adaptive substepping for stability
+- ✅ Better energy conservation
+- ✅ More accurate orbital mechanics
 
 ### Developer Experience
 
@@ -258,6 +298,7 @@ Toggle between modes via ControlPanel
 - ✅ Added `/pr` command for automated pull request creation
 - ✅ Added `/review-structure` for architecture reviews
 - ✅ Comprehensive command documentation
+- ✅ Fixed all TypeScript build errors
 
 ## Known Limitations
 
@@ -265,4 +306,45 @@ Toggle between modes via ControlPanel
 - No spatial partitioning (quadtree/octree) for collision optimization
 - Delta time capped at 0.1s may cause issues with very low framerates
 - No Web Workers for physics calculations
-- Large bundle size (733KB) due to Three.js - consider code splitting for production
+- Large bundle size (745KB) due to Three.js - consider code splitting for production
+- Only 3 preset scenarios available
+
+## Future Development Roadmap
+
+### Phase 1: Enhanced UX (In Progress)
+
+- 🚧 **Tutorial/Help overlay** - First-time user guidance
+- 🚧 **HUD component** - FPS counter, body count, total energy display
+- 🚧 **Keyboard shortcuts** - Space (pause), R (reset), Delete (remove), Tab (mode switch)
+- 🚧 **More presets** - Solar system (8 planets), Binary system, Spiral galaxy
+
+### Phase 2: Gamification (Planned)
+
+- 🎯 **Challenge system** - Missions with objectives (e.g., "Create stable 3-body orbit")
+- 🎯 **Statistics tracking** - Longest simulation, most collisions, highest energy
+- 🎯 **Achievement system** - Unlock new colors, effects, or presets
+- 🎯 **Gravity Golf mode** - Hit targets using gravitational assists
+- 🎯 **Survival mode** - Dodge incoming asteroids
+- 🎯 **Save/load system** - localStorage-based scenario gallery
+
+### Phase 3: Advanced Features (Future)
+
+- ⚡ **Barnes-Hut optimization** - O(n log n) gravity calculations for 500+ bodies
+- ⚡ **Web Workers** - Physics calculations in separate thread
+- ⚡ **Instanced rendering** - Efficient rendering for thousands of asteroids
+- 🎨 **Advanced visuals** - Comet tails, planetary rings, atmospheres, gravitational lensing
+- 🎨 **Skybox backgrounds** - Space environments, nebulae, galaxies
+- 🎨 **Planetary textures** - Rocky, gaseous, icy body types
+- 🔊 **Sound effects** - Optional audio for collisions and interactions (toggleable)
+- 📊 **Energy graph** - Real-time plot of total energy over time
+- 🌌 **Scenario editor** - Visual tool for creating custom presets
+
+### Phase 4: Performance & Polish (Future)
+
+- 🔧 **Code splitting** - Reduce initial bundle size
+- 🔧 **Level of Detail (LOD)** - Simplified meshes for distant objects
+- 🔧 **Octree collision detection** - Faster collision checks
+- 🔧 **Mobile support** - Touch controls and responsive UI
+- 🔧 **Internationalization** - Multiple language support
+
+**Legend**: ✅ Completed | 🚧 In Progress | 🎯 Planned | ⚡ Performance | 🎨 Visual | 🔊 Audio | 📊 Data | 🌌 Tools | 🔧 Technical

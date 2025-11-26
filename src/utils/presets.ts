@@ -16,6 +16,52 @@ function orbitalVelocity(centralMass: number, radius: number): number {
   return Math.sqrt((G * centralMass) / radius);
 }
 
+// Funkcja konwertująca HSL na HEX dla kolorów
+function hslToHex(h: number, s: number, l: number): number {
+  s /= 100;
+  l /= 100;
+
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+
+  let r = 0,
+    g = 0,
+    b = 0;
+
+  if (0 <= h && h < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (60 <= h && h < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (120 <= h && h < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (180 <= h && h < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (240 <= h && h < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else if (300 <= h && h < 360) {
+    r = c;
+    g = 0;
+    b = x;
+  }
+
+  const red = Math.round((r + m) * 255);
+  const green = Math.round((g + m) * 255);
+  const blue = Math.round((b + m) * 255);
+
+  return (red << 16) | (green << 8) | blue;
+}
+
 // Funkcja pomocnicza do tworzenia księżyca orbitującego planetę
 function createMoon(
   moonMass: number,
@@ -23,7 +69,8 @@ function createMoon(
   planetVelocity: { x: number; y: number; z: number },
   planetMass: number,
   distanceFromPlanet: number,
-  angle: number // kąt w radianach dla różnych pozycji startowych
+  angle: number, // kąt w radianach dla różnych pozycji startowych
+  color?: number // opcjonalny kolor księżyca
 ) {
   // Pozycja księżyca = pozycja planety + offset w płaszczyźnie orbity
   const offsetX = Math.cos(angle) * distanceFromPlanet;
@@ -46,6 +93,7 @@ function createMoon(
       y: planetVelocity.y,
       z: planetVelocity.z + orbitalVelZ,
     },
+    color,
   };
 }
 
@@ -69,8 +117,15 @@ export const PRESETS: Record<string, Preset> = {
       };
 
       // Księżyc orbitujący Ziemię - bliżej dla stabilnej orbity
-      const moon = createMoon(MOON_MASS * 2.5, earth.position, earth.velocity, EARTH_MASS, 1.5, 0);
-      moon.color = 0x888888; // Szary Księżyc
+      const moon = createMoon(
+        MOON_MASS * 2.5,
+        earth.position,
+        earth.velocity,
+        EARTH_MASS,
+        1.5,
+        0,
+        0x888888 // Szary Księżyc
+      );
 
       return [sun, earth, moon];
     })(),
@@ -181,6 +236,62 @@ export const PRESETS: Record<string, Preset> = {
       };
 
       return [body1, body2, body3];
+    })(),
+  },
+
+  SPIRAL_GALAXY: {
+    name: 'Mini Galaktyka',
+    description: 'Galaktyka spiralna z centralną czarną dziurą i orbitującymi gwiazdami',
+    bodies: (() => {
+      const bodies = [];
+
+      // Centralna czarna dziura
+      const blackHole = {
+        mass: 2000,
+        position: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+        color: 0x000000, // Czarna
+      };
+      bodies.push(blackHole);
+
+      // Generuj gwiazdy w spirali
+      const NUM_ARMS = 3; // Liczba ramion spirali
+      const STARS_PER_ARM = 8;
+      const ARM_SPREAD = Math.PI * 2; // Pełny obrót
+
+      for (let arm = 0; arm < NUM_ARMS; arm++) {
+        const armAngleOffset = (arm * Math.PI * 2) / NUM_ARMS;
+
+        for (let i = 0; i < STARS_PER_ARM; i++) {
+          const radius = 20 + i * 6; // Odległość od centrum (20 do 62)
+          const angle = armAngleOffset + (i * ARM_SPREAD) / STARS_PER_ARM;
+
+          // Pozycja w spirali
+          const x = Math.cos(angle) * radius;
+          const z = Math.sin(angle) * radius;
+
+          // Prędkość orbitalna + mały szum dla realizmu
+          const orbitalSpeed = orbitalVelocity(blackHole.mass, radius);
+          const velocityX = -Math.sin(angle) * orbitalSpeed * 0.9; // 0.9 dla efektu spirali
+          const velocityZ = Math.cos(angle) * orbitalSpeed * 0.9;
+
+          // Masa gwiazdy z wariacją
+          const mass = 2 + Math.random() * 4;
+
+          // Kolor w zależności od pozycji w ramieniu
+          const colorHue = (i / STARS_PER_ARM) * 360;
+          const color = hslToHex(colorHue, 70, 60);
+
+          bodies.push({
+            mass,
+            position: { x, y: 0, z },
+            velocity: { x: velocityX, y: 0, z: velocityZ },
+            color,
+          });
+        }
+      }
+
+      return bodies;
     })(),
   },
 };

@@ -69,8 +69,8 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
             prędkości.
           </p>
           <p>
-            <strong>Presety:</strong> Wypróbuj gotowe scenariusze (Ziemia+Księżyc, Trójkąt
-            Lagrange'a, Ósemka).
+            <strong>Presety:</strong> Wypróbuj gotowe scenariusze (Ziemia+Księżyc, Układ Podwójny,
+            Trójkąt Lagrange'a, Ósemka, Ziemia+Satelity).
           </p>
         </>
       ),

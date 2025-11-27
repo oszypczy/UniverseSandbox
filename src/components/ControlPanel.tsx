@@ -14,7 +14,6 @@ interface ControlPanelProps {
   interactionMode: InteractionMode;
   onInteractionModeChange: (mode: InteractionMode) => void;
   onLoadPreset: (preset: Preset, presetKey: string) => void;
-  onResetPreset: () => void;
   currentPreset: string | null;
 }
 
@@ -29,7 +28,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   interactionMode,
   onInteractionModeChange,
   onLoadPreset,
-  onResetPreset,
   currentPreset,
 }) => {
   return (
@@ -56,34 +54,23 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
       <div className="control-section preset-section">
         <label>Scenariusze:</label>
-        <div className="preset-controls">
-          <select
-            className="preset-dropdown"
-            onChange={(e) => {
-              const presetKey = e.target.value;
-              if (presetKey && PRESETS[presetKey]) {
-                onLoadPreset(PRESETS[presetKey], presetKey);
-              }
-            }}
-            value={currentPreset || ''}
-          >
-            <option value="">Wybierz scenariusz...</option>
-            {Object.entries(PRESETS).map(([key, preset]) => (
-              <option key={key} value={key}>
-                {preset.name}
-              </option>
-            ))}
-          </select>
-          {currentPreset && (
-            <button
-              onClick={onResetPreset}
-              className="btn btn-reset"
-              title="Zresetuj aktualny scenariusz"
-            >
-              🔄 Reset
-            </button>
-          )}
-        </div>
+        <select
+          className="preset-dropdown"
+          onChange={(e) => {
+            const presetKey = e.target.value;
+            if (presetKey && PRESETS[presetKey]) {
+              onLoadPreset(PRESETS[presetKey], presetKey);
+            }
+          }}
+          value={currentPreset || ''}
+        >
+          <option value="">Wybierz scenariusz...</option>
+          {Object.entries(PRESETS).map(([key, preset]) => (
+            <option key={key} value={key}>
+              {preset.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="control-section">

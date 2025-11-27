@@ -16,52 +16,6 @@ function orbitalVelocity(centralMass: number, radius: number): number {
   return Math.sqrt((G * centralMass) / radius);
 }
 
-// Funkcja konwertująca HSL na HEX dla kolorów
-function hslToHex(h: number, s: number, l: number): number {
-  s /= 100;
-  l /= 100;
-
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-
-  let r = 0,
-    g = 0,
-    b = 0;
-
-  if (0 <= h && h < 60) {
-    r = c;
-    g = x;
-    b = 0;
-  } else if (60 <= h && h < 120) {
-    r = x;
-    g = c;
-    b = 0;
-  } else if (120 <= h && h < 180) {
-    r = 0;
-    g = c;
-    b = x;
-  } else if (180 <= h && h < 240) {
-    r = 0;
-    g = x;
-    b = c;
-  } else if (240 <= h && h < 300) {
-    r = x;
-    g = 0;
-    b = c;
-  } else if (300 <= h && h < 360) {
-    r = c;
-    g = 0;
-    b = x;
-  }
-
-  const red = Math.round((r + m) * 255);
-  const green = Math.round((g + m) * 255);
-  const blue = Math.round((b + m) * 255);
-
-  return (red << 16) | (green << 8) | blue;
-}
-
 // Funkcja pomocnicza do tworzenia księżyca orbitującego planetę
 function createMoon(
   moonMass: number,
@@ -99,7 +53,7 @@ function createMoon(
 
 export const PRESETS: Record<string, Preset> = {
   EARTH_MOON: {
-    name: 'Ziemia + Księżyc',
+    name: 'Układ Słońce-Ziemia-Księżyc',
     description: 'Ziemia z Księżycem orbitująca wokół Słońca',
     bodies: (() => {
       const sun = {
@@ -239,56 +193,168 @@ export const PRESETS: Record<string, Preset> = {
     })(),
   },
 
-  SPIRAL_GALAXY: {
-    name: 'Mini Galaktyka',
-    description: 'Galaktyka spiralna z centralną czarną dziurą i orbitującymi gwiazdami',
+  BINARY_STAR_PLANET: {
+    name: 'Układ Podwójny (Tatooine)',
+    description: 'Dwie gwiazdy orbitujące wspólny środek masy z planetą na orbicie zewnętrznej',
     bodies: (() => {
       const bodies = [];
 
-      // Centralna czarna dziura
-      const blackHole = {
-        mass: 2000,
+      // Parametry układu binarnego
+      const STAR1_MASS = 400; // Większa gwiazda (pomarańczowa)
+      const STAR2_MASS = 200; // Mniejsza gwiazda (niebieska)
+      const TOTAL_MASS = STAR1_MASS + STAR2_MASS;
+      const BINARY_SEPARATION = 8; // Odległość między gwiazdami
+
+      // Środek masy jest w (0, 0, 0)
+      // Oblicz odległości od środka masy
+      const r1 = (STAR2_MASS / TOTAL_MASS) * BINARY_SEPARATION; // 2.67
+      const r2 = (STAR1_MASS / TOTAL_MASS) * BINARY_SEPARATION; // 5.33
+
+      // Prędkość kątowa układu binarnego
+      const omega = Math.sqrt((G * TOTAL_MASS) / Math.pow(BINARY_SEPARATION, 3));
+
+      // Prędkości liniowe gwiazd (w kierunku Z dla orbity w płaszczyźnie XZ)
+      const v1 = omega * r1;
+      const v2 = omega * r2;
+
+      // Gwiazda 1 (większa, pomarańczowa) - po lewej
+      const star1 = {
+        mass: STAR1_MASS,
+        position: { x: -r1, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: v1 },
+        color: 0xffa500, // Pomarańczowa
+      };
+      bodies.push(star1);
+
+      // Gwiazda 2 (mniejsza, niebieska) - po prawej
+      const star2 = {
+        mass: STAR2_MASS,
+        position: { x: r2, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: -v2 }, // Przeciwny kierunek
+        color: 0x4488ff, // Niebiesko-biała
+      };
+      bodies.push(star2);
+
+      // Planeta orbitująca cały układ (orbita circumstellar)
+      const PLANET_MASS = 8;
+      const PLANET_RADIUS = 20; // Musi być daleko od gwiazd dla stabilności
+
+      // Prędkość orbitalna planety wokół środka masy
+      const planetOrbitalVel = orbitalVelocity(TOTAL_MASS, PLANET_RADIUS);
+
+      // Planeta startuje na osi Z
+      const planet = {
+        mass: PLANET_MASS,
+        position: { x: 0, y: 0, z: PLANET_RADIUS },
+        velocity: { x: planetOrbitalVel, y: 0, z: 0 },
+        color: 0xcc8844, // Piaskowa (jak Tatooine!)
+      };
+      bodies.push(planet);
+
+      return bodies;
+    })(),
+  },
+
+  EARTH_SATELLITES: {
+    name: 'Ziemia + Satelity',
+    description: 'Ziemia otoczona wieloma satelitami na różnych orbitach (LEO, MEO, GEO)',
+    bodies: (() => {
+      const bodies = [];
+
+      // Ziemia w centrum
+      const EARTH_MASS = 500;
+      const earth = {
+        mass: EARTH_MASS,
         position: { x: 0, y: 0, z: 0 },
         velocity: { x: 0, y: 0, z: 0 },
-        color: 0x000000, // Czarna
+        color: 0x2288ff, // Niebieska
       };
-      bodies.push(blackHole);
+      bodies.push(earth);
 
-      // Generuj gwiazdy w spirali
-      const NUM_ARMS = 3; // Liczba ramion spirali
-      const STARS_PER_ARM = 8;
-      const ARM_SPREAD = Math.PI * 2; // Pełny obrót
+      // Satelity na różnych orbitach
+      const SATELLITE_MASS = 0.001; // Ultra mikroskopijnie mała masa - zero wpływu między sobą
 
-      for (let arm = 0; arm < NUM_ARMS; arm++) {
-        const armAngleOffset = (arm * Math.PI * 2) / NUM_ARMS;
+      // LEO (Low Earth Orbit) - niska orbita, szybkie satelity
+      const LEO_RADIUS_BASE = 9;
+      const LEO_COUNT = 8;
+      for (let i = 0; i < LEO_COUNT; i++) {
+        // Duża losowość w fazie orbity (gdzie satelita startuje)
+        const angle = (i / LEO_COUNT) * Math.PI * 2 + Math.random() * Math.PI * 2;
+        // Różne nachylenia orbit (0-60 stopni)
+        const inclination = (Math.random() * 60 * Math.PI) / 180;
+        // Większa wariacja promienia (±1.5) dla separacji
+        const radius = LEO_RADIUS_BASE + (Math.random() - 0.5) * 3.0;
 
-        for (let i = 0; i < STARS_PER_ARM; i++) {
-          const radius = 20 + i * 6; // Odległość od centrum (20 do 62)
-          const angle = armAngleOffset + (i * ARM_SPREAD) / STARS_PER_ARM;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius * Math.cos(inclination);
+        const y = Math.sin(angle) * radius * Math.sin(inclination);
 
-          // Pozycja w spirali
-          const x = Math.cos(angle) * radius;
-          const z = Math.sin(angle) * radius;
+        const orbitalVel = orbitalVelocity(EARTH_MASS, radius);
 
-          // Prędkość orbitalna + mały szum dla realizmu
-          const orbitalSpeed = orbitalVelocity(blackHole.mass, radius);
-          const velocityX = -Math.sin(angle) * orbitalSpeed * 0.9; // 0.9 dla efektu spirali
-          const velocityZ = Math.cos(angle) * orbitalSpeed * 0.9;
+        // Prędkość prostopadła do wektora pozycji
+        const velocityX = -Math.sin(angle) * orbitalVel * Math.cos(inclination);
+        const velocityZ = Math.cos(angle) * orbitalVel * Math.cos(inclination);
+        const velocityY = Math.cos(angle) * orbitalVel * Math.sin(inclination);
 
-          // Masa gwiazdy z wariacją
-          const mass = 2 + Math.random() * 4;
+        bodies.push({
+          mass: SATELLITE_MASS,
+          position: { x, y, z },
+          velocity: { x: velocityX, y: velocityY, z: velocityZ },
+          color: 0xff6666, // Czerwone (LEO)
+        });
+      }
 
-          // Kolor w zależności od pozycji w ramieniu
-          const colorHue = (i / STARS_PER_ARM) * 360;
-          const color = hslToHex(colorHue, 70, 60);
+      // MEO (Medium Earth Orbit) - średnia orbita
+      const MEO_RADIUS_BASE = 18;
+      const MEO_COUNT = 8;
+      for (let i = 0; i < MEO_COUNT; i++) {
+        const angle = (i / MEO_COUNT) * Math.PI * 2 + Math.random() * Math.PI * 2;
+        const inclination = (Math.random() * 70 * Math.PI) / 180;
+        const radius = MEO_RADIUS_BASE + (Math.random() - 0.5) * 4.0;
 
-          bodies.push({
-            mass,
-            position: { x, y: 0, z },
-            velocity: { x: velocityX, y: 0, z: velocityZ },
-            color,
-          });
-        }
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius * Math.cos(inclination);
+        const y = Math.sin(angle) * radius * Math.sin(inclination);
+
+        const orbitalVel = orbitalVelocity(EARTH_MASS, radius);
+
+        const velocityX = -Math.sin(angle) * orbitalVel * Math.cos(inclination);
+        const velocityZ = Math.cos(angle) * orbitalVel * Math.cos(inclination);
+        const velocityY = Math.cos(angle) * orbitalVel * Math.sin(inclination);
+
+        bodies.push({
+          mass: SATELLITE_MASS,
+          position: { x, y, z },
+          velocity: { x: velocityX, y: velocityY, z: velocityZ },
+          color: 0x66ff66, // Zielone (MEO)
+        });
+      }
+
+      // GEO (Geostationary-like Orbit) - wysoka orbita, wolniejsze satelity
+      const GEO_RADIUS_BASE = 30;
+      const GEO_COUNT = 6;
+      for (let i = 0; i < GEO_COUNT; i++) {
+        const angle = (i / GEO_COUNT) * Math.PI * 2 + Math.random() * Math.PI * 2;
+        // GEO zwykle na równiku (małe nachylenie)
+        const inclination = (Math.random() * 20 * Math.PI) / 180;
+        const radius = GEO_RADIUS_BASE + (Math.random() - 0.5) * 5.0;
+
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius * Math.cos(inclination);
+        const y = Math.sin(angle) * radius * Math.sin(inclination);
+
+        const orbitalVel = orbitalVelocity(EARTH_MASS, radius);
+
+        const velocityX = -Math.sin(angle) * orbitalVel * Math.cos(inclination);
+        const velocityZ = Math.cos(angle) * orbitalVel * Math.cos(inclination);
+        const velocityY = Math.cos(angle) * orbitalVel * Math.sin(inclination);
+
+        bodies.push({
+          mass: SATELLITE_MASS,
+          position: { x, y, z },
+          velocity: { x: velocityX, y: velocityY, z: velocityZ },
+          color: 0xffaa44, // Pomarańczowe (GEO)
+        });
       }
 
       return bodies;

@@ -51,51 +51,7 @@ function App() {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      switch (e.key.toLowerCase()) {
-        case 'r':
-          // Reset simulation
-          if (currentPreset) {
-            handleResetPreset();
-          } else {
-            handleClearAll();
-          }
-          break;
-
-        case 'delete':
-        case 'backspace':
-          // Delete selected body
-          if (selectedBodyId) {
-            handleBodyDelete(selectedBodyId);
-          }
-          break;
-
-        case 'tab':
-          // Toggle interaction mode
-          e.preventDefault(); // Prevent default tab behavior
-          setInteractionMode((prev) => (prev === 'edit' ? 'camera' : 'edit'));
-          break;
-
-        case 'escape':
-          // Close body editor
-          if (selectedBodyId) {
-            setSelectedBodyId(null);
-          }
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentPreset, selectedBodyId, handleResetPreset, handleClearAll, handleBodyDelete]);
-
+  // Handler functions
   const handleClearAll = useCallback(() => {
     scene3DRef.current?.removeAllBodies();
     setSelectedBodyId(null);
@@ -166,6 +122,51 @@ function App() {
     setSelectedBodyId(null);
   };
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'r':
+          // Reset simulation
+          if (currentPreset) {
+            handleResetPreset();
+          } else {
+            handleClearAll();
+          }
+          break;
+
+        case 'delete':
+        case 'backspace':
+          // Delete selected body
+          if (selectedBodyId) {
+            handleBodyDelete(selectedBodyId);
+          }
+          break;
+
+        case 'tab':
+          // Toggle interaction mode
+          e.preventDefault(); // Prevent default tab behavior
+          setInteractionMode((prev) => (prev === 'edit' ? 'camera' : 'edit'));
+          break;
+
+        case 'escape':
+          // Close body editor
+          if (selectedBodyId) {
+            setSelectedBodyId(null);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentPreset, selectedBodyId, handleResetPreset, handleClearAll, handleBodyDelete]);
+
   const [selectedBody, setSelectedBody] = useState<{
     id: string;
     mass: number;
@@ -205,7 +206,6 @@ function App() {
           interactionMode={interactionMode}
           onInteractionModeChange={setInteractionMode}
           onLoadPreset={handleLoadPreset}
-          onResetPreset={handleResetPreset}
           currentPreset={currentPreset}
         />
         {selectedBody && (

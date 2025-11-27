@@ -281,6 +281,32 @@
   background: linear-gradient(135deg, #7c3aed, #6d28d9);
 }
 
+.pause-control {
+  margin-bottom: 12px;
+}
+
+.pause-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.pause-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.pause-btn.paused {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.pause-btn.paused:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+.slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .info-section {
   margin-top: 24px;
   padding: 16px;

@@ -8,6 +8,7 @@ import { BodyEditor } from './components/BodyEditor';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Tutorial, HelpButton } from './components/Tutorial';
 import { HUD } from './components/HUD';
+import { KeyboardShortcuts } from './components/KeyboardShortcuts';
 import { useFPS } from './hooks/useFPS';
 import { UI_CONSTANTS } from './utils/constants';
 import './App.css';
@@ -16,6 +17,8 @@ const DEFAULT_MASS = UI_CONSTANTS.DEFAULT_MASS;
 
 function App() {
   const [timeScale, setTimeScale] = useState(UI_CONSTANTS.DEFAULT_TIME_SCALE);
+  const [isPaused, setIsPaused] = useState(false);
+  const [savedTimeScale, setSavedTimeScale] = useState(UI_CONSTANTS.DEFAULT_TIME_SCALE);
   const [showTrails, setShowTrails] = useState(true);
   const [showVelocityVectors, setShowVelocityVectors] = useState(false);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('edit');
@@ -24,6 +27,22 @@ function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [bodyCount, setBodyCount] = useState(0);
   const [totalEnergy, setTotalEnergy] = useState<number | undefined>(undefined);
+
+  // Toggle pause
+  const togglePause = useCallback(() => {
+    setIsPaused((prev) => {
+      if (prev) {
+        // Unpause - restore saved time scale
+        setTimeScale(savedTimeScale);
+        return false;
+      } else {
+        // Pause - save current time scale and set to 0
+        setSavedTimeScale(timeScale);
+        setTimeScale(0);
+        return true;
+      }
+    });
+  }, [timeScale, savedTimeScale]);
 
   const scene3DRef = useRef<Scene3DHandle>(null);
   const fps = useFPS();
@@ -92,14 +111,18 @@ function App() {
 
   const handleBodyUpdate = (
     bodyId: string,
-    updates: { mass?: number; velocity?: { x: number; y: number; z: number } }
+    updates: { mass?: number; radius?: number; velocity?: { x: number; y: number; z: number } }
   ) => {
     if (!scene3DRef.current) return;
 
-    const updatedData: { mass?: number; velocity?: THREE.Vector3 } = {};
+    const updatedData: { mass?: number; radius?: number; velocity?: THREE.Vector3 } = {};
 
     if (updates.mass !== undefined) {
       updatedData.mass = updates.mass;
+    }
+
+    if (updates.radius !== undefined) {
+      updatedData.radius = updates.radius;
     }
 
     if (updates.velocity) {
@@ -160,26 +183,69 @@ function App() {
             setSelectedBodyId(null);
           }
           break;
+
+        case ' ':
+          // Toggle pause
+          e.preventDefault(); // Prevent page scroll
+          togglePause();
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentPreset, selectedBodyId, handleResetPreset, handleClearAll, handleBodyDelete]);
+  }, [
+    currentPreset,
+    selectedBodyId,
+    handleResetPreset,
+    handleClearAll,
+    handleBodyDelete,
+    togglePause,
+  ]);
 
   const [selectedBody, setSelectedBody] = useState<{
     id: string;
     mass: number;
+    radius: number;
     velocity: { x: number; y: number; z: number };
   } | null>(null);
 
+  // Update selected body data periodically for real-time values
   useEffect(() => {
-    if (selectedBodyId && scene3DRef.current) {
-      const body = scene3DRef.current.getBodyById(selectedBodyId);
-      setSelectedBody(body || null);
-    } else {
+    if (!selectedBodyId) {
       setSelectedBody(null);
+      return;
     }
+
+    const updateSelectedBody = () => {
+      if (scene3DRef.current) {
+        const body = scene3DRef.current.getBodyById(selectedBodyId);
+        if (body) {
+          // Create a new object with copied values to trigger React update
+          setSelectedBody({
+            id: body.id,
+            mass: body.mass,
+            radius: body.radius,
+            velocity: {
+              x: body.velocity.x,
+              y: body.velocity.y,
+              z: body.velocity.z,
+            },
+          });
+        } else {
+          // Body was removed (e.g., collision)
+          setSelectedBody(null);
+        }
+      }
+    };
+
+    // Initial update
+    updateSelectedBody();
+
+    // Update every 100ms for real-time sync
+    const intervalId = setInterval(updateSelectedBody, 100);
+
+    return () => clearInterval(intervalId);
   }, [selectedBodyId]);
 
   return (
@@ -198,6 +264,8 @@ function App() {
         <ControlPanel
           timeScale={timeScale}
           onTimeScaleChange={setTimeScale}
+          isPaused={isPaused}
+          onTogglePause={togglePause}
           showTrails={showTrails}
           onShowTrailsChange={setShowTrails}
           showVelocityVectors={showVelocityVectors}
@@ -217,6 +285,7 @@ function App() {
           />
         )}
         <HUD fps={fps} bodyCount={bodyCount} totalEnergy={totalEnergy} />
+        <KeyboardShortcuts />
         <HelpButton onClick={() => setShowTutorial(true)} />
         {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
       </div>

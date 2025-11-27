@@ -10,7 +10,7 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
 
   const steps = [
     {
-      title: 'Witaj w symulacji N-body! 🌌',
+      title: 'Witaj w symulacji N-body!',
       content: (
         <>
           <p>
@@ -22,7 +22,7 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
       ),
     },
     {
-      title: 'Tworzenie ciał 🪐',
+      title: 'Tworzenie ciał',
       content: (
         <>
           <p>
@@ -40,7 +40,7 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
       ),
     },
     {
-      title: 'Tryby interakcji 🎮',
+      title: 'Tryby interakcji',
       content: (
         <>
           <p>
@@ -55,7 +55,7 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
       ),
     },
     {
-      title: 'Panel kontrolny ⚙️',
+      title: 'Panel kontrolny',
       content: (
         <>
           <p>
@@ -76,7 +76,7 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
       ),
     },
     {
-      title: 'Skróty klawiszowe ⌨️',
+      title: 'Skróty klawiszowe',
       content: (
         <>
           <p>
@@ -94,12 +94,12 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
           <p>
             <strong>H:</strong> Ukryj/pokaż HUD ze statystykami
           </p>
-          <p className="keyboard-hint">💡 Skróty nie działają gdy piszesz w polach tekstowych</p>
+          <p className="keyboard-hint">Skróty nie działają gdy piszesz w polach tekstowych</p>
         </>
       ),
     },
     {
-      title: 'Gotowe do zabawy! 🚀',
+      title: 'Gotowe do zabawy!',
       content: (
         <>
           <p>Teraz znasz podstawy! Oto kilka pomysłów na eksperymentowanie:</p>
@@ -198,7 +198,7 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
               </>
             ) : (
               <button className="btn btn-primary" onClick={handleComplete}>
-                Rozpocznij! 🚀
+                Rozpocznij!
               </button>
             )}
           </div>

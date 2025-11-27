@@ -25,11 +25,12 @@ export class PhysicsEngine {
     position: THREE.Vector3;
     velocity: THREE.Vector3;
     color?: number;
+    radius?: number;
   }): Body {
     const id = generateId();
 
-    // Geometria - rozmiar zależy od masy
-    const radius = calculateRadius(params.mass);
+    // Geometria - rozmiar z parametru lub obliczony z masy
+    const radius = params.radius ?? calculateRadius(params.mass);
     const geometry = new THREE.SphereGeometry(radius, 32, 32);
 
     // Materiał - kolor zależy od masy, gwiazdy świecą
@@ -73,6 +74,7 @@ export class PhysicsEngine {
     const body: Body = {
       id,
       mass: params.mass,
+      radius,
       position: params.position.clone(),
       velocity: params.velocity.clone(),
       acceleration: new THREE.Vector3(0, 0, 0),
@@ -118,9 +120,23 @@ export class PhysicsEngine {
     return this.bodies.find((b) => b.id === id);
   }
 
-  updateBody(id: string, updates: { mass?: number; velocity?: THREE.Vector3 }): void {
+  updateBody(
+    id: string,
+    updates: { mass?: number; velocity?: THREE.Vector3; radius?: number }
+  ): void {
     const body = this.getBodyById(id);
     if (!body) return;
+
+    // Track if we need to update geometry
+    let needsGeometryUpdate = false;
+    let newRadius = body.radius;
+
+    // Aktualizuj radius (niezależnie od masy)
+    if (updates.radius !== undefined && updates.radius !== body.radius) {
+      body.radius = updates.radius;
+      newRadius = updates.radius;
+      needsGeometryUpdate = true;
+    }
 
     // Aktualizuj masę
     if (updates.mass !== undefined && updates.mass !== body.mass) {
@@ -130,15 +146,8 @@ export class PhysicsEngine {
       const wasStarBefore = isStar(oldMass);
       const isStarNow = isStar(updates.mass);
 
-      // Zaktualizuj rozmiar i kolor meshu
-      const newRadius = calculateRadius(updates.mass);
+      // Zaktualizuj kolor meshu
       const newColor = getColorByMass(updates.mass);
-
-      // Dispose old geometry
-      body.mesh.geometry.dispose();
-
-      // Create new geometry
-      body.mesh.geometry = new THREE.SphereGeometry(newRadius, 32, 32);
 
       // Update material properties
       const material = body.mesh.material as THREE.MeshPhongMaterial;
@@ -175,6 +184,12 @@ export class PhysicsEngine {
           light.color.setHex(newColor);
         }
       }
+    }
+
+    // Update geometry if radius changed
+    if (needsGeometryUpdate) {
+      body.mesh.geometry.dispose();
+      body.mesh.geometry = new THREE.SphereGeometry(newRadius, 32, 32);
     }
 
     // Aktualizuj prędkość
@@ -322,11 +337,9 @@ export class PhysicsEngine {
         }
 
         const distance = bodyA.position.distanceTo(bodyB.position);
-        const radiusA = calculateRadius(bodyA.mass);
-        const radiusB = calculateRadius(bodyB.mass);
 
-        // Kolizja wykryta
-        if (distance < radiusA + radiusB) {
+        // Kolizja wykryta - używamy radius z body
+        if (distance < bodyA.radius + bodyB.radius) {
           toMerge.push([bodyA, bodyB]);
           processedIds.add(bodyA.id);
           processedIds.add(bodyB.id);
@@ -368,6 +381,10 @@ export class PhysicsEngine {
       .addScaledVector(bodyB.position, bodyB.mass)
       .divideScalar(totalMass);
 
+    // Nowy radius z sumy objętości: V = 4/3 * π * r³
+    // V_total = V_A + V_B → r_new = ∛(r_A³ + r_B³)
+    const newRadius = Math.cbrt(Math.pow(bodyA.radius, 3) + Math.pow(bodyB.radius, 3));
+
     // Usuń oba ciała
     this.removeBody(bodyA.id);
     this.removeBody(bodyB.id);
@@ -377,6 +394,7 @@ export class PhysicsEngine {
       mass: totalMass,
       position: newPosition,
       velocity: newVelocity,
+      radius: newRadius,
     });
 
     return newBody;

@@ -10,6 +10,7 @@ interface UseMouseInteractionProps {
     position: THREE.Vector3;
     velocity: THREE.Vector3;
     mass: number;
+    radius?: number;
   }) => void;
   onBodySelect?: (bodyId: string | null) => void;
   defaultMass: number;
@@ -27,11 +28,14 @@ export function useMouseInteraction({
   const [isDragging, setIsDragging] = useState(false);
   const startPointRef = useRef<THREE.Vector3 | null>(null);
   const startPositionRef = useRef<{ x: number; y: number } | null>(null);
-  const velocityArrowRef = useRef<THREE.ArrowHelper | null>(null);
   const previewSphereRef = useRef<THREE.Mesh | null>(null);
+  const currentRadiusRef = useRef<number>(1);
   const raycasterRef = useRef(new THREE.Raycaster());
   const wasDraggingRef = useRef(false);
   const [isOverBody, setIsOverBody] = useState(false);
+
+  const MIN_RADIUS = 0.3;
+  const MAX_RADIUS = 10;
 
   // Zwiększ threshold dla łatwiejszego klikania w ciała
   useEffect(() => {
@@ -50,16 +54,21 @@ export function useMouseInteraction({
       const x = ((screenX - rect.left) / rect.width) * 2 - 1;
       const y = -((screenY - rect.top) / rect.height) * 2 + 1;
 
-      // Rzutowanie na płaszczyznę z=0
       const mouse = new THREE.Vector2(x, y);
       raycasterRef.current.setFromCamera(mouse, camera);
 
-      // Płaszczyzna prostopadła do kamery, przechodząca przez (0,0,0)
-      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-      const intersect = new THREE.Vector3();
-      raycasterRef.current.ray.intersectPlane(plane, intersect);
+      // Płaszczyzna prostopadła do kierunku patrzenia kamery, przechodząca przez (0,0,0)
+      // Dzięki temu można stawiać ciała niezależnie od kąta kamery
+      const cameraDirection = new THREE.Vector3();
+      camera.getWorldDirection(cameraDirection);
 
-      return intersect;
+      const plane = new THREE.Plane();
+      plane.setFromNormalAndCoplanarPoint(cameraDirection, new THREE.Vector3(0, 0, 0));
+
+      const intersect = new THREE.Vector3();
+      const result = raycasterRef.current.ray.intersectPlane(plane, intersect);
+
+      return result ? intersect : null;
     },
     [camera, canvasRef]
   );
@@ -98,7 +107,7 @@ export function useMouseInteraction({
         const distance = ray.distanceToPoint(mesh.position);
         const radius = (mesh.geometry as THREE.SphereGeometry).parameters.radius;
 
-        if (distance < radius * 2.5) {
+        if (distance < radius * 1.2) {
           return; // Kliknięto blisko ciała, nie rozpoczynaj przeciągania
         }
       }
@@ -110,13 +119,15 @@ export function useMouseInteraction({
       wasDraggingRef.current = false; // Reset flagi
       startPointRef.current = position;
       startPositionRef.current = { x: event.clientX, y: event.clientY };
+      currentRadiusRef.current = MIN_RADIUS;
 
-      // Wizualizacja punktu startowego
-      const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+      // Wizualizacja - preview sphere pokazuje rozmiar
+      const geometry = new THREE.SphereGeometry(MIN_RADIUS, 24, 24);
       const material = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: 0x4488ff,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.6,
+        wireframe: true,
       });
       previewSphereRef.current = new THREE.Mesh(geometry, material);
       previewSphereRef.current.position.copy(position);
@@ -125,7 +136,7 @@ export function useMouseInteraction({
     [enabled, camera, scene, screenTo3D, canvasRef]
   );
 
-  // Mouse move - pokazuj prędkość
+  // Mouse move - aktualizuj rozmiar preview sphere
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (!isDragging || !startPointRef.current || !scene || !camera) return;
@@ -135,78 +146,45 @@ export function useMouseInteraction({
       const currentPoint = screenTo3D(event.clientX, event.clientY);
       if (!currentPoint) return;
 
-      // Oblicz wektor prędkości
-      const velocityVector = new THREE.Vector3()
-        .subVectors(currentPoint, startPointRef.current)
-        .multiplyScalar(2); // Skalowanie dla lepszej wizualizacji
+      // Oblicz odległość od punktu startowego - to będzie radius
+      const distance = currentPoint.distanceTo(startPointRef.current);
+      const newRadius = Math.max(MIN_RADIUS, Math.min(MAX_RADIUS, distance));
+      currentRadiusRef.current = newRadius;
 
-      // Usuń stary arrow
-      if (velocityArrowRef.current) {
-        scene.remove(velocityArrowRef.current);
-        velocityArrowRef.current.dispose();
-      }
-
-      // Stwórz nowy arrow
-      if (velocityVector.length() > 0.1) {
-        const direction = velocityVector.clone().normalize();
-        const length = Math.min(velocityVector.length(), 20);
-
-        velocityArrowRef.current = new THREE.ArrowHelper(
-          direction,
-          startPointRef.current,
-          length,
-          0x00ff00,
-          length * 0.2,
-          length * 0.15
-        );
-        scene.add(velocityArrowRef.current);
+      // Aktualizuj preview sphere
+      if (previewSphereRef.current) {
+        previewSphereRef.current.geometry.dispose();
+        previewSphereRef.current.geometry = new THREE.SphereGeometry(newRadius, 24, 24);
       }
     },
     [isDragging, scene, camera, screenTo3D]
   );
 
-  // Mouse up - stwórz ciało
-  const handleMouseUp = useCallback(
-    (event: MouseEvent) => {
-      if (!isDragging || !startPointRef.current || !scene) return;
+  // Mouse up - stwórz ciało z ustawionym rozmiarem
+  const handleMouseUp = useCallback(() => {
+    if (!isDragging || !startPointRef.current || !scene) return;
 
-      const endPoint = screenTo3D(event.clientX, event.clientY);
+    // Stwórz ciało z ustawionym rozmiarem i zerową prędkością
+    onBodyCreate({
+      position: startPointRef.current.clone(),
+      velocity: new THREE.Vector3(0, 0, 0),
+      mass: defaultMass,
+      radius: currentRadiusRef.current,
+    });
 
-      if (endPoint) {
-        // Oblicz prędkość początkową
-        const velocity = new THREE.Vector3()
-          .subVectors(endPoint, startPointRef.current)
-          .multiplyScalar(2);
+    // Cleanup
+    setIsDragging(false);
+    startPointRef.current = null;
+    startPositionRef.current = null;
 
-        // Stwórz ciało
-        onBodyCreate({
-          position: startPointRef.current.clone(),
-          velocity,
-          mass: defaultMass,
-        });
-      }
-
-      // Cleanup
-      setIsDragging(false);
-      startPointRef.current = null;
-      startPositionRef.current = null;
-
-      // Usuń wizualizacje
-      if (previewSphereRef.current) {
-        scene.remove(previewSphereRef.current);
-        previewSphereRef.current.geometry.dispose();
-        (previewSphereRef.current.material as THREE.Material).dispose();
-        previewSphereRef.current = null;
-      }
-
-      if (velocityArrowRef.current) {
-        scene.remove(velocityArrowRef.current);
-        velocityArrowRef.current.dispose();
-        velocityArrowRef.current = null;
-      }
-    },
-    [isDragging, scene, onBodyCreate, defaultMass, screenTo3D]
-  );
+    // Usuń preview sphere
+    if (previewSphereRef.current) {
+      scene.remove(previewSphereRef.current);
+      previewSphereRef.current.geometry.dispose();
+      (previewSphereRef.current.material as THREE.Material).dispose();
+      previewSphereRef.current = null;
+    }
+  }, [isDragging, scene, onBodyCreate, defaultMass]);
 
   // Single click - select body or deselect
   const handleClick = useCallback(
@@ -286,7 +264,7 @@ export function useMouseInteraction({
         const distance = ray.distanceToPoint(mesh.position);
         const radius = (mesh.geometry as THREE.SphereGeometry).parameters.radius;
 
-        if (distance < radius * 2.5) {
+        if (distance < radius * 1.2) {
           return; // Kliknięto blisko ciała, nie twórz nowego
         }
       }
@@ -339,7 +317,7 @@ export function useMouseInteraction({
           const radius = (mesh.geometry as THREE.SphereGeometry).parameters.radius;
 
           // Zwiększony obszar wykrywania (2x większy niż faktyczny promień)
-          if (distance < radius * 2.5) {
+          if (distance < radius * 1.2) {
             foundBody = true;
             break;
           }
@@ -390,10 +368,6 @@ export function useMouseInteraction({
           scene.remove(previewSphereRef.current);
           previewSphereRef.current.geometry.dispose();
           (previewSphereRef.current.material as THREE.Material).dispose();
-        }
-        if (velocityArrowRef.current) {
-          scene.remove(velocityArrowRef.current);
-          velocityArrowRef.current.dispose();
         }
       }
     };

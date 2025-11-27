@@ -4,6 +4,7 @@ import './BodyEditor.css';
 interface BodyData {
   id: string;
   mass: number;
+  radius: number;
   velocity: { x: number; y: number; z: number };
 }
 
@@ -11,33 +12,89 @@ interface BodyEditorProps {
   body: BodyData | null;
   onUpdate: (
     bodyId: string,
-    updates: { mass?: number; velocity?: { x: number; y: number; z: number } }
+    updates: { mass?: number; radius?: number; velocity?: { x: number; y: number; z: number } }
   ) => void;
   onDelete: (bodyId: string) => void;
   onClose: () => void;
 }
 
 export const BodyEditor: React.FC<BodyEditorProps> = ({ body, onUpdate, onDelete, onClose }) => {
-  const [mass, setMass] = useState(0);
-  const [velocityX, setVelocityX] = useState(0);
-  const [velocityY, setVelocityY] = useState(0);
-  const [velocityZ, setVelocityZ] = useState(0);
+  // Use string state for inputs to allow free editing
+  const [massStr, setMassStr] = useState('');
+  const [radiusStr, setRadiusStr] = useState('');
+  const [velXStr, setVelXStr] = useState('');
+  const [velYStr, setVelYStr] = useState('');
+  const [velZStr, setVelZStr] = useState('');
+
+  // Track which field is being edited (has focus)
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // Draggable state
-  const [position, setPosition] = useState({ x: 20, y: 20 }); // Lewy górny róg
+  const [position, setPosition] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const editorRef = useRef<HTMLDivElement>(null);
 
+  // Sync string state when body changes (real-time updates)
+  // This is intentional - we want to sync external body data to local string state
   useEffect(() => {
     if (body) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMass(body.mass);
-      setVelocityX(body.velocity.x);
-      setVelocityY(body.velocity.y);
-      setVelocityZ(body.velocity.z);
+      // Only update fields that are not currently being edited
+      /* eslint-disable react-hooks/set-state-in-effect */
+      if (focusedField !== 'mass') setMassStr(body.mass.toFixed(2));
+      if (focusedField !== 'radius') setRadiusStr(body.radius.toFixed(2));
+      if (focusedField !== 'velX') setVelXStr(body.velocity.x.toFixed(2));
+      if (focusedField !== 'velY') setVelYStr(body.velocity.y.toFixed(2));
+      if (focusedField !== 'velZ') setVelZStr(body.velocity.z.toFixed(2));
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
-  }, [body]);
+  }, [body, focusedField]);
+
+  // Apply value on blur or Enter
+  const applyMass = () => {
+    const val = parseFloat(massStr);
+    if (!isNaN(val) && val > 0 && body) {
+      onUpdate(body.id, { mass: val });
+    } else if (body) {
+      setMassStr(body.mass.toFixed(2)); // Reset to current value if invalid
+    }
+  };
+
+  const applyRadius = () => {
+    const val = parseFloat(radiusStr);
+    if (!isNaN(val) && val > 0 && body) {
+      onUpdate(body.id, { radius: val });
+    } else if (body) {
+      setRadiusStr(body.radius.toFixed(2)); // Reset to current value if invalid
+    }
+  };
+
+  const applyVelocity = (axis: 'x' | 'y' | 'z') => {
+    if (!body) return;
+    const xVal = parseFloat(velXStr);
+    const yVal = parseFloat(velYStr);
+    const zVal = parseFloat(velZStr);
+
+    const newVel = {
+      x: isNaN(xVal) ? body.velocity.x : xVal,
+      y: isNaN(yVal) ? body.velocity.y : yVal,
+      z: isNaN(zVal) ? body.velocity.z : zVal,
+    };
+
+    onUpdate(body.id, { velocity: newVel });
+
+    // Reset invalid inputs
+    if (axis === 'x' && isNaN(xVal)) setVelXStr(body.velocity.x.toFixed(2));
+    if (axis === 'y' && isNaN(yVal)) setVelYStr(body.velocity.y.toFixed(2));
+    if (axis === 'z' && isNaN(zVal)) setVelZStr(body.velocity.z.toFixed(2));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, applyFn: () => void) => {
+    if (e.key === 'Enter') {
+      applyFn();
+      (e.target as HTMLInputElement).blur();
+    }
+  };
 
   // Dragging handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -106,18 +163,33 @@ export const BodyEditor: React.FC<BodyEditorProps> = ({ body, onUpdate, onDelete
         <div className="editor-field">
           <label>Masa:</label>
           <input
-            type="number"
-            value={mass.toFixed(2)}
-            onChange={(e) => {
-              const newMass = Number(e.target.value);
-              setMass(newMass);
-              if (body) {
-                onUpdate(body.id, { mass: newMass });
-              }
+            type="text"
+            inputMode="decimal"
+            value={massStr}
+            onChange={(e) => setMassStr(e.target.value)}
+            onFocus={() => setFocusedField('mass')}
+            onBlur={() => {
+              setFocusedField(null);
+              applyMass();
             }}
-            min={0.1}
-            max={1000}
-            step="0.1"
+            onKeyDown={(e) => handleKeyDown(e, applyMass)}
+            className="mass-input"
+          />
+        </div>
+
+        <div className="editor-field">
+          <label>Rozmiar:</label>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={radiusStr}
+            onChange={(e) => setRadiusStr(e.target.value)}
+            onFocus={() => setFocusedField('radius')}
+            onBlur={() => {
+              setFocusedField(null);
+              applyRadius();
+            }}
+            onKeyDown={(e) => handleKeyDown(e, applyRadius)}
             className="mass-input"
           />
         </div>
@@ -128,54 +200,48 @@ export const BodyEditor: React.FC<BodyEditorProps> = ({ body, onUpdate, onDelete
             <div className="velocity-input-group">
               <label className="velocity-label">X:</label>
               <input
-                type="number"
-                value={velocityX.toFixed(2)}
-                onChange={(e) => {
-                  const newX = Number(e.target.value);
-                  setVelocityX(newX);
-                  if (body) {
-                    onUpdate(body.id, {
-                      velocity: { x: newX, y: velocityY, z: velocityZ },
-                    });
-                  }
+                type="text"
+                inputMode="decimal"
+                value={velXStr}
+                onChange={(e) => setVelXStr(e.target.value)}
+                onFocus={() => setFocusedField('velX')}
+                onBlur={() => {
+                  setFocusedField(null);
+                  applyVelocity('x');
                 }}
-                step="0.1"
+                onKeyDown={(e) => handleKeyDown(e, () => applyVelocity('x'))}
                 className="velocity-input"
               />
             </div>
             <div className="velocity-input-group">
               <label className="velocity-label">Y:</label>
               <input
-                type="number"
-                value={velocityY.toFixed(2)}
-                onChange={(e) => {
-                  const newY = Number(e.target.value);
-                  setVelocityY(newY);
-                  if (body) {
-                    onUpdate(body.id, {
-                      velocity: { x: velocityX, y: newY, z: velocityZ },
-                    });
-                  }
+                type="text"
+                inputMode="decimal"
+                value={velYStr}
+                onChange={(e) => setVelYStr(e.target.value)}
+                onFocus={() => setFocusedField('velY')}
+                onBlur={() => {
+                  setFocusedField(null);
+                  applyVelocity('y');
                 }}
-                step="0.1"
+                onKeyDown={(e) => handleKeyDown(e, () => applyVelocity('y'))}
                 className="velocity-input"
               />
             </div>
             <div className="velocity-input-group">
               <label className="velocity-label">Z:</label>
               <input
-                type="number"
-                value={velocityZ.toFixed(2)}
-                onChange={(e) => {
-                  const newZ = Number(e.target.value);
-                  setVelocityZ(newZ);
-                  if (body) {
-                    onUpdate(body.id, {
-                      velocity: { x: velocityX, y: velocityY, z: newZ },
-                    });
-                  }
+                type="text"
+                inputMode="decimal"
+                value={velZStr}
+                onChange={(e) => setVelZStr(e.target.value)}
+                onFocus={() => setFocusedField('velZ')}
+                onBlur={() => {
+                  setFocusedField(null);
+                  applyVelocity('z');
                 }}
-                step="0.1"
+                onKeyDown={(e) => handleKeyDown(e, () => applyVelocity('z'))}
                 className="velocity-input"
               />
             </div>
@@ -184,7 +250,7 @@ export const BodyEditor: React.FC<BodyEditorProps> = ({ body, onUpdate, onDelete
 
         <div className="editor-buttons">
           <button className="btn btn-danger" onClick={handleDelete}>
-            🗑️ Usuń ciało
+            Usuń ciało
           </button>
         </div>
       </div>

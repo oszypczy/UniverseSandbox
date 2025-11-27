@@ -1,21 +1,21 @@
-.hud {
+.keyboard-shortcuts {
   position: fixed;
   bottom: 20px;
-  left: 20px;
+  right: 20px;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 12px;
-  min-width: 200px;
+  min-width: 180px;
   z-index: 900;
-  animation: slideInLeft 0.3s ease-out;
+  animation: slideInRight 0.3s ease-out;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-@keyframes slideInLeft {
+@keyframes slideInRight {
   from {
-    transform: translateX(-20px);
+    transform: translateX(20px);
     opacity: 0;
   }
   to {
@@ -24,7 +24,7 @@
   }
 }
 
-.hud-header {
+.shortcuts-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -33,7 +33,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.hud-title {
+.shortcuts-title {
   color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
   font-weight: 600;
@@ -41,7 +41,7 @@
   letter-spacing: 1px;
 }
 
-.hud-close {
+.shortcuts-close {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.6);
@@ -56,83 +56,70 @@
   transition: all 0.2s;
 }
 
-.hud-close:hover {
+.shortcuts-close:hover {
   color: #fff;
   transform: rotate(90deg);
 }
 
-.hud-stats {
+.shortcuts-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.hud-stat {
+.shortcut-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  transition: background 0.2s;
+  gap: 10px;
+  padding: 4px 0;
 }
 
-.hud-stat:hover {
-  background: rgba(255, 255, 255, 0.08);
+.shortcut-key {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  min-width: 36px;
+  text-align: center;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
 }
 
-.hud-stat-label {
+.shortcut-desc {
   color: rgba(255, 255, 255, 0.7);
   font-size: 12px;
-  font-weight: 500;
 }
 
-.hud-stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  font-family: 'Courier New', monospace;
-  text-shadow: 0 0 8px currentColor;
-  transition: color 0.3s;
-}
-
-.hud-stat-value.status {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.hud-hint {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 10px;
-  text-align: center;
-}
-
-/* Toggle button when HUD is hidden */
-.hud-toggle {
+/* Toggle button when shortcuts panel is hidden */
+.shortcuts-toggle {
   position: fixed;
   bottom: 20px;
-  left: 20px;
+  right: 20px;
   z-index: 900;
   animation: fadeIn 0.3s ease-out;
 }
 
-.hud-toggle button {
+.shortcuts-toggle button {
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 8px;
+  padding: 8px 12px;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
   transition: all 0.2s;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.hud-toggle button:hover {
+.shortcuts-toggle button:hover {
   transform: scale(1.1);
   background: rgba(0, 0, 0, 0.8);
+  color: #fff;
 }
 
 @keyframes fadeIn {
@@ -146,32 +133,34 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .hud {
+  .keyboard-shortcuts {
     bottom: 16px;
-    left: 16px;
-    min-width: 180px;
+    right: 16px;
+    min-width: 160px;
     padding: 10px;
   }
 
-  .hud-title {
+  .shortcuts-title {
     font-size: 12px;
   }
 
-  .hud-stat-label {
+  .shortcut-key {
+    font-size: 11px;
+    min-width: 32px;
+    padding: 2px 6px;
+  }
+
+  .shortcut-desc {
     font-size: 11px;
   }
 
-  .hud-stat-value {
-    font-size: 16px;
-  }
-
-  .hud-toggle {
+  .shortcuts-toggle {
     bottom: 16px;
-    left: 16px;
+    right: 16px;
   }
 
-  .hud-toggle button {
-    font-size: 18px;
-    padding: 6px;
+  .shortcuts-toggle button {
+    font-size: 14px;
+    padding: 6px 10px;
   }
 }

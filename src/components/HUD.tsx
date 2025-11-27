@@ -25,7 +25,7 @@ export const HUD: React.FC<HUDProps> = ({ fps, bodyCount, totalEnergy }) => {
   if (!isVisible) {
     return (
       <div className="hud-toggle" title="Pokaż HUD (H)">
-        <button onClick={() => setIsVisible(true)}>📊</button>
+        <button onClick={() => setIsVisible(true)}>Stats</button>
       </div>
     );
   }
@@ -44,12 +44,14 @@ export const HUD: React.FC<HUDProps> = ({ fps, bodyCount, totalEnergy }) => {
     return '#f87171'; // Red (approaching limit)
   };
 
-  // Format energy in scientific notation if needed
-  const formatEnergy = (energy: number | undefined): string => {
-    if (energy === undefined) return 'N/A';
-    if (Math.abs(energy) < 1000) return energy.toFixed(2);
-    return energy.toExponential(2);
+  // Determine if system is bound based on total energy
+  const getSystemStatus = (energy: number | undefined): { text: string; color: string } => {
+    if (energy === undefined) return { text: 'N/A', color: '#888' };
+    if (energy < 0) return { text: 'Związany', color: '#4ade80' }; // Green - bound
+    return { text: 'Niezwiązany', color: '#f87171' }; // Red - unbound
   };
+
+  const systemStatus = getSystemStatus(totalEnergy);
 
   return (
     <div className="hud">
@@ -75,11 +77,11 @@ export const HUD: React.FC<HUDProps> = ({ fps, bodyCount, totalEnergy }) => {
           </span>
         </div>
 
-        {totalEnergy !== undefined && (
+        {totalEnergy !== undefined && bodyCount >= 2 && (
           <div className="hud-stat">
-            <span className="hud-stat-label">Energia</span>
-            <span className="hud-stat-value" style={{ color: '#a78bfa' }}>
-              {formatEnergy(totalEnergy)}
+            <span className="hud-stat-label">Układ</span>
+            <span className="hud-stat-value status" style={{ color: systemStatus.color }}>
+              {systemStatus.text}
             </span>
           </div>
         )}

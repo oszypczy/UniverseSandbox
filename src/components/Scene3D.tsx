@@ -21,8 +21,13 @@ export interface Scene3DHandle {
   loadPreset: (preset: Preset) => void;
   getBodyById: (
     id: string
-  ) => { id: string; mass: number; velocity: { x: number; y: number; z: number } } | undefined;
-  updateBody: (id: string, updates: { mass?: number; velocity?: THREE.Vector3 }) => void;
+  ) =>
+    | { id: string; mass: number; radius: number; velocity: { x: number; y: number; z: number } }
+    | undefined;
+  updateBody: (
+    id: string,
+    updates: { mass?: number; radius?: number; velocity?: THREE.Vector3 }
+  ) => void;
   removeBody: (id: string) => void;
   getBodyCount: () => number;
   getTotalEnergy: () => number;
@@ -68,7 +73,12 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
 
     // Callback dla tworzenia nowych ciał
     const handleBodyCreate = useCallback(
-      (params: { position: THREE.Vector3; velocity: THREE.Vector3; mass: number }) => {
+      (params: {
+        position: THREE.Vector3;
+        velocity: THREE.Vector3;
+        mass: number;
+        radius?: number;
+      }) => {
         addBody(params);
       },
       [addBody]
@@ -114,13 +124,17 @@ export const Scene3D = forwardRef<Scene3DHandle, Scene3DProps>(
               ),
               mass: bodyParams.mass,
               color: bodyParams.color,
+              radius: bodyParams.radius,
             });
           });
         },
         getBodyById: (id: string) => {
           return getBodyById(id);
         },
-        updateBody: (id: string, updates: { mass?: number; velocity?: THREE.Vector3 }) => {
+        updateBody: (
+          id: string,
+          updates: { mass?: number; radius?: number; velocity?: THREE.Vector3 }
+        ) => {
           updateBody(id, updates);
         },
         removeBody: (id: string) => {

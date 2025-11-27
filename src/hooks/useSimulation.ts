@@ -401,6 +401,7 @@ export function useSimulation({
       position: THREE.Vector3;
       velocity: THREE.Vector3;
       color?: number;
+      radius?: number;
     }) => {
       if (!engineRef.current || !scene) return;
 
@@ -462,7 +463,7 @@ export function useSimulation({
   }, []);
 
   const updateBody = useCallback(
-    (id: string, updates: { mass?: number; velocity?: THREE.Vector3 }) => {
+    (id: string, updates: { mass?: number; velocity?: THREE.Vector3; radius?: number }) => {
       if (!engineRef.current) return;
       engineRef.current.updateBody(id, updates);
     },

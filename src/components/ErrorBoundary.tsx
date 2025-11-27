@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             textAlign: 'center',
           }}
         >
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚠️ Błąd Renderowania</h1>
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Błąd Renderowania</h1>
           <p style={{ fontSize: '1.2rem', marginBottom: '2rem', maxWidth: '600px' }}>
             Wystąpił błąd podczas renderowania symulacji. To może być spowodowane problemem z WebGL
             lub Three.js.
@@ -89,7 +89,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#5599ff')}
             onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4488ff')}
           >
-            🔄 Przeładuj Stronę
+            Przeładuj Stronę
           </button>
         </div>
       );

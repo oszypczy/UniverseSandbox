@@ -6,6 +6,8 @@ import './ControlPanel.css';
 interface ControlPanelProps {
   timeScale: number;
   onTimeScaleChange: (value: number) => void;
+  isPaused: boolean;
+  onTogglePause: () => void;
   showTrails: boolean;
   onShowTrailsChange: (value: boolean) => void;
   showVelocityVectors: boolean;
@@ -20,6 +22,8 @@ interface ControlPanelProps {
 export const ControlPanel: React.FC<ControlPanelProps> = ({
   timeScale,
   onTimeScaleChange,
+  isPaused,
+  onTogglePause,
   showTrails,
   onShowTrailsChange,
   showVelocityVectors,
@@ -32,7 +36,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 }) => {
   return (
     <div className="control-panel">
-      <h2>🎮 Kontrola Symulacji</h2>
+      <h2>Kontrola Symulacji</h2>
 
       <div className="control-section mode-section">
         <label>Tryb interakcji:</label>
@@ -41,13 +45,13 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             onClick={() => onInteractionModeChange('edit')}
             className={`mode-btn ${interactionMode === 'edit' ? 'mode-btn-active' : ''}`}
           >
-            ✏️ Edycja
+            Edycja
           </button>
           <button
             onClick={() => onInteractionModeChange('camera')}
             className={`mode-btn ${interactionMode === 'camera' ? 'mode-btn-active' : ''}`}
           >
-            📷 Kamera
+            Kamera
           </button>
         </div>
       </div>
@@ -74,6 +78,11 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
       </div>
 
       <div className="control-section">
+        <div className="pause-control">
+          <button onClick={onTogglePause} className={`btn pause-btn ${isPaused ? 'paused' : ''}`}>
+            {isPaused ? 'Wznów' : 'Pauza'}
+          </button>
+        </div>
         <label>
           Szybkość czasu: <strong>{timeScale.toFixed(1)}x</strong>
           <input
@@ -84,6 +93,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             value={timeScale}
             onChange={(e) => onTimeScaleChange(Number(e.target.value))}
             className="slider"
+            disabled={isPaused}
           />
           <div className="slider-labels">
             <span>0.0x</span>
@@ -116,7 +126,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
       <div className="control-section buttons">
         <button onClick={onClearAll} className="btn btn-danger">
-          🗑️ Usuń wszystkie
+          Usuń wszystkie
         </button>
       </div>
     </div>

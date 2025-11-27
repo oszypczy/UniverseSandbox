@@ -13,11 +13,13 @@ export interface BodyParams {
   position: Vector3D;
   velocity: Vector3D;
   color?: number;
+  radius?: number; // Optional - if not provided, calculated from mass
 }
 
 export interface Body {
   id: string;
   mass: number;
+  radius: number; // Visual radius (independent from mass)
   position: THREE.Vector3;
   velocity: THREE.Vector3;
   acceleration: THREE.Vector3;

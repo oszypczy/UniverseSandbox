@@ -32,6 +32,17 @@ npm run preview
 npm run lint
 ```
 
+## Deployment
+
+The project is deployed to GitHub Pages automatically on push to `main` branch.
+
+**Live URL**: https://oszypczy.github.io/UniverseSandbox/
+
+**Configuration**:
+
+- `vite.config.ts`: `base: '/UniverseSandbox/'` for correct asset paths
+- `.github/workflows/deploy.yml`: GitHub Actions workflow for automated deployment
+
 ## Architecture
 
 ### Core Components
@@ -65,27 +76,35 @@ npm run lint
 **useMouseInteraction** (`src/hooks/useMouseInteraction.ts`): User input handling
 
 - Converts 2D screen coordinates to 3D world space via raycasting
-- **Click-and-drag interaction**: starting point = position, drag vector = initial velocity
-- **Double-click**: creates stationary body at clicked position
-- **Single click**: selects body for editing (opens BodyEditor)
-- Shows visual feedback (preview sphere, velocity arrow)
+- **Click-and-drag interaction**: starting point = position, drag distance = radius (size)
+- **Double-click**: creates stationary body with default size at clicked position
+- **Single click on body**: selects body for editing (opens BodyEditor)
+- Shows visual feedback (wireframe preview sphere showing size)
 - Raycasting for body selection in 3D space
+- Plane for body placement is always perpendicular to camera direction (works from any angle)
 
 **App.tsx**: Top-level state coordinator
 
-- Manages UI state (timeScale, showTrails, showVelocityVectors, interactionMode, selectedBodyId)
-- Coordinates Scene3D, ControlPanel, and BodyEditor
+- Manages UI state (timeScale, isPaused, showTrails, showVelocityVectors, interactionMode, selectedBodyId)
+- Coordinates Scene3D, ControlPanel, BodyEditor, HUD, and KeyboardShortcuts
 - Exposes reset and clear operations via Scene3DHandle ref
 - Handles body selection and updates
+- Keyboard shortcuts handling (Space, R, Tab, Escape, H, ?)
 - Wrapped in ErrorBoundary for graceful error handling
 
 **BodyEditor** (`src/components/BodyEditor.tsx`): Interactive body editing component
 
 - Draggable panel for editing selected celestial bodies
-- Real-time mass and velocity adjustment
+- Real-time mass, radius, and velocity adjustment (independent controls)
+- Values update in real-time during simulation (except when field is focused)
 - Delete functionality for individual bodies
-- Automatically updates physics simulation when values change
-- **New addition**: Allows precise control over body properties during simulation
+- Text inputs with apply-on-blur for better UX
+
+**KeyboardShortcuts** (`src/components/KeyboardShortcuts.tsx`): Keyboard shortcuts overlay
+
+- Displays available shortcuts in bottom-right corner
+- Toggle visibility with ? key
+- Shows: Space (pause), R (reset), Del (delete), Tab (mode), Esc (close), H (HUD), ? (shortcuts)
 
 **ErrorBoundary** (`src/components/ErrorBoundary.tsx`): Error handling component
 
@@ -165,10 +184,12 @@ npm run lint
 - New mass: `m_total = m1 + m2`
 - New velocity: conserves momentum `v = (m1*v1 + m2*v2) / m_total`
 - New position: center of mass
+- New radius: calculated from sum of volumes `r_new = ∛(r1³ + r2³)`
 
 **Visual effects**:
 
-- Body radius scales with `log(mass)` for better visualization
+- Body radius is independent from mass (can be set separately)
+- Default radius calculated from `log(mass)` when not specified
 - Color gradient: blue (small mass) → yellow (medium) → red (large)
 - **Star glow effect**: Pulsating emissive glow for larger bodies
 - Trails: max 100 points, stored per-body, rendered as Three.js Line (can be toggled on/off)
@@ -182,11 +203,12 @@ npm run lint
 
 **Edit mode** ('edit'): Default, allows creating and editing bodies
 
-- **Click and drag**: Create a body with initial velocity (drag vector)
-- **Double-click**: Create stationary body at clicked position
+- **Click and drag**: Create a body - drag distance sets radius (size)
+- **Double-click**: Create stationary body with default size at clicked position
 - **Single click on body**: Select body for editing (opens BodyEditor panel)
 - OrbitControls disabled during drag
 - Can still rotate camera when not dragging
+- Bodies can be placed from any camera angle (plane perpendicular to view direction)
 
 **Camera mode** ('camera'): Pure navigation
 
@@ -194,7 +216,17 @@ npm run lint
 - Full OrbitControls enabled (pan, rotate, zoom)
 - Use for exploring large simulations without accidental body creation
 
-Toggle between modes via ControlPanel (Edit/Camera button)
+Toggle between modes via ControlPanel (Edit/Camera button) or Tab key
+
+## Keyboard Shortcuts
+
+- **Space**: Pause/Resume simulation
+- **R**: Reset simulation (reload preset or clear all)
+- **Delete/Backspace**: Delete selected body
+- **Tab**: Toggle Edit/Camera mode
+- **Escape**: Close body editor
+- **H**: Toggle HUD visibility
+- **?**: Toggle keyboard shortcuts panel
 
 ## Common Development Patterns
 
@@ -311,11 +343,16 @@ Toggle between modes via ControlPanel (Edit/Camera button)
 
 ## Future Development Roadmap
 
-### Phase 1: Enhanced UX (In Progress)
+### Phase 1: Enhanced UX (Completed)
 
-- 🚧 **Tutorial/Help overlay** - First-time user guidance
-- 🚧 **HUD component** - FPS counter, body count, total energy display
-- 🚧 **Keyboard shortcuts** - Space (pause), R (reset), Delete (remove), Tab (mode switch)
+- ✅ **Tutorial/Help overlay** - First-time user guidance
+- ✅ **HUD component** - FPS counter, body count, bound/unbound system status
+- ✅ **Keyboard shortcuts** - Space (pause), R (reset), Delete (remove), Tab (mode switch), H (HUD), ? (shortcuts)
+- ✅ **Keyboard shortcuts panel** - Visual overlay showing all available shortcuts
+- ✅ **Pause functionality** - Space key and button to pause/resume simulation
+- ✅ **Independent radius control** - Body size separate from mass
+- ✅ **Real-time value updates** - BodyEditor shows live values during simulation
+- ✅ **GitHub Pages deployment** - Automated deployment via GitHub Actions
 - 🚧 **More presets** - Solar system (8 planets), Binary system, Spiral galaxy
 
 ### Phase 2: Gamification (Planned)

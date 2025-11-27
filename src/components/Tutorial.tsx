@@ -80,6 +80,9 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
       content: (
         <>
           <p>
+            <strong>Space:</strong> Pauza/Wznów symulację
+          </p>
+          <p>
             <strong>R:</strong> Reset symulacji lub wybranego presetu
           </p>
           <p>
@@ -93,6 +96,9 @@ export const Tutorial: React.FC<TutorialProps> = ({ onClose }) => {
           </p>
           <p>
             <strong>H:</strong> Ukryj/pokaż HUD ze statystykami
+          </p>
+          <p>
+            <strong>?:</strong> Pokaż/ukryj panel ze skrótami
           </p>
           <p className="keyboard-hint">Skróty nie działają gdy piszesz w polach tekstowych</p>
         </>

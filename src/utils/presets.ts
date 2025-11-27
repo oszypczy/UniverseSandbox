@@ -275,15 +275,15 @@ export const PRESETS: Record<string, Preset> = {
       const SATELLITE_MASS = 0.001; // Ultra mikroskopijnie mała masa - zero wpływu między sobą
 
       // LEO (Low Earth Orbit) - niska orbita, szybkie satelity
-      const LEO_RADIUS_BASE = 9;
+      const LEO_RADIUS_BASE = 12;
       const LEO_COUNT = 8;
       for (let i = 0; i < LEO_COUNT; i++) {
-        // Duża losowość w fazie orbity (gdzie satelita startuje)
-        const angle = (i / LEO_COUNT) * Math.PI * 2 + Math.random() * Math.PI * 2;
+        // Równomierne rozmieszczenie z małą losową perturbacją
+        const angle = (i / LEO_COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
         // Różne nachylenia orbit (0-60 stopni)
         const inclination = (Math.random() * 60 * Math.PI) / 180;
-        // Większa wariacja promienia (±1.5) dla separacji
-        const radius = LEO_RADIUS_BASE + (Math.random() - 0.5) * 3.0;
+        // Większa wariacja promienia (±2.0) dla lepszej separacji
+        const radius = LEO_RADIUS_BASE + (Math.random() - 0.5) * 4.0;
 
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius * Math.cos(inclination);
@@ -305,12 +305,12 @@ export const PRESETS: Record<string, Preset> = {
       }
 
       // MEO (Medium Earth Orbit) - średnia orbita
-      const MEO_RADIUS_BASE = 18;
+      const MEO_RADIUS_BASE = 23;
       const MEO_COUNT = 8;
       for (let i = 0; i < MEO_COUNT; i++) {
-        const angle = (i / MEO_COUNT) * Math.PI * 2 + Math.random() * Math.PI * 2;
+        const angle = (i / MEO_COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
         const inclination = (Math.random() * 70 * Math.PI) / 180;
-        const radius = MEO_RADIUS_BASE + (Math.random() - 0.5) * 4.0;
+        const radius = MEO_RADIUS_BASE + (Math.random() - 0.5) * 6.0;
 
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius * Math.cos(inclination);
@@ -331,13 +331,13 @@ export const PRESETS: Record<string, Preset> = {
       }
 
       // GEO (Geostationary-like Orbit) - wysoka orbita, wolniejsze satelity
-      const GEO_RADIUS_BASE = 30;
+      const GEO_RADIUS_BASE = 38;
       const GEO_COUNT = 6;
       for (let i = 0; i < GEO_COUNT; i++) {
-        const angle = (i / GEO_COUNT) * Math.PI * 2 + Math.random() * Math.PI * 2;
+        const angle = (i / GEO_COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
         // GEO zwykle na równiku (małe nachylenie)
         const inclination = (Math.random() * 20 * Math.PI) / 180;
-        const radius = GEO_RADIUS_BASE + (Math.random() - 0.5) * 5.0;
+        const radius = GEO_RADIUS_BASE + (Math.random() - 0.5) * 7.0;
 
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius * Math.cos(inclination);
